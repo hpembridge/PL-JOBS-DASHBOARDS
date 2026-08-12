@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PL-JOBS-DASHBOARDS</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #1a1d23;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header { background: #1a1d23; color: #fff; padding: 32px 48px 28px; }
+    .header-inner { max-width: 900px; margin: auto; }
+
+    .eyebrow {
+      font-size: 11px; font-weight: 600; letter-spacing: .12em;
+      text-transform: uppercase; color: #7b8fa6; margin-bottom: 6px;
+    }
+    header h1 { font-size: 26px; font-weight: 700; letter-spacing: -.3px; margin-bottom: 6px; }
+    header p { font-size: 13px; color: #9aabbd; max-width: 620px; line-height: 1.5; }
+
+    main { flex: 1; padding: 40px 48px; max-width: 996px; margin: auto; width: 100%; }
+
+    .section-label {
+      font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      color: #8e9aab; padding-bottom: 4px; border-bottom: 1px solid #dde2ea; margin-bottom: 16px;
+    }
+
+    .card-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 36px; }
+    .card {
+      background: #fff; border-radius: 10px; border: 1px solid #dde2ea;
+      text-decoration: none; color: inherit; display: flex; align-items: center;
+      gap: 16px; padding: 16px 20px; transition: box-shadow .15s, transform .15s;
+    }
+    .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); transform: translateY(-1px); }
+    .card i.card-icon { font-size: 16px; color: #6366f1; width: 20px; text-align: center; }
+    .card-text { flex: 1; }
+    .card h2 { font-size: 14px; font-weight: 600; }
+    .card p { font-size: 12px; color: #8e9aab; margin-top: 2px; }
+    .card-arrow { font-size: 12px; color: #9aa3b0; }
+
+    .notes-inline-card {
+      background: #fff; border: 1px solid #dde2ea; border-radius: 10px;
+      padding: 24px 28px; margin-bottom: 10px;
+    }
+    .notes-inline-card h1, .notes-inline-card h2, .notes-inline-card h3 { font-weight: 700; margin: 0 0 10px; color: #1a1d23; line-height: 1.3; }
+    .notes-inline-card h1 { font-size: 18px; }
+    .notes-inline-card h2 { font-size: 15px; }
+    .notes-inline-card h3 { font-size: 13px; color: #4b5563; }
+    .notes-inline-card p  { font-size: 13px; line-height: 1.65; color: #374151; margin-bottom: 12px; }
+    .notes-inline-card ul, .notes-inline-card ol { font-size: 13px; line-height: 1.65; color: #374151; padding-left: 18px; margin-bottom: 12px; }
+    .notes-inline-card li { margin-bottom: 4px; }
+    .notes-inline-card strong { font-weight: 700; color: #1a1d23; }
+
+    footer { text-align: center; font-size: 12px; color: #9aa3b0; padding: 20px 48px; border-top: 1px solid #dde2ea; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <div class="eyebrow">Active Jobs Dashboards</div>
+      <h1>PL-JOBS-DASHBOARDS</h1>
+      <p>Exploring what "my active jobs" looks like for different roles — driven by the scan-location data in job_locations.xlsx for individuals and departments, and by client attachment for sales.</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="section-label">Prototypes</div>
+    <div class="card-grid">
+      <a class="card" href="person-dashboard.html">
+        <i class="fa-regular fa-user card-icon"></i>
+        <div class="card-text">
+          <h2>My Active Jobs — Creative &amp; Production</h2>
+          <p>Per-person dashboard for anyone with a named scan location (e.g. Colin Dunn, Kristen M). Switch the "Viewing as" picker to preview anyone.</p>
+        </div>
+        <i class="fa-solid fa-arrow-right card-arrow"></i>
+      </a>
+      <a class="card" href="department-dashboard.html">
+        <i class="fa-regular fa-industry-windows card-icon"></i>
+        <div class="card-text">
+          <h2>Department Jobs — Bindery, Woodshop &amp; the rest of Production</h2>
+          <p>One shared board per department. Every scan location in that department is a filter pill on the toolbar.</p>
+        </div>
+        <i class="fa-solid fa-arrow-right card-arrow"></i>
+      </a>
+      <a class="card" href="sales-dashboard.html">
+        <i class="fa-regular fa-handshake card-icon"></i>
+        <div class="card-text">
+          <h2>My Clients' Active Jobs — Sales</h2>
+          <p>Jobs scoped to the client accounts a rep carries, not to a scan location. Pills filter by client instead.</p>
+        </div>
+        <i class="fa-solid fa-arrow-right card-arrow"></i>
+      </a>
+    </div>
+
+    <div class="section-label">Dev Notes</div>
+    <div id="notesList"></div>
+  </main>
+
+  <footer>PL-JOBS-DASHBOARDS · Cleveland Menu Co.</footer>
+
+  <script>
+    fetch('notes-features.md').then(r => r.text()).then(md => {
+      document.getElementById('notesList').innerHTML = '<div class="notes-inline-card">' + marked.parse(md) + '</div>';
+    }).catch(() => {});
+  </script>
+
+</body>
+</html>

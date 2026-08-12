@@ -1,0 +1,161 @@
+/**
+ * Active Jobs Dashboards — shared styles
+ * Table styling lifted from PL-CM-1.5/customer-jobs.html so this feels
+ * like the same app. Adds: viewing-as switcher, location pills (both
+ * as row chips and as toggleable filters), department/person picker.
+ */
+
+.page-content { max-width: var(--container-data); }
+
+/* ── VIEWING AS SWITCHER ── */
+.viewing-as {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.viewing-as label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.viewing-as select {
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  cursor: pointer;
+  outline: none;
+  min-width: 220px;
+}
+.viewing-as select:focus { border-color: var(--border-focus); }
+
+.dept-meta {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-bottom: 20px;
+}
+
+/* ── TOOLBAR ── */
+.jobs-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin: 16px 0px;
+  gap: 16px;
+}
+.toolbar-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* ── STATUS/LOCATION FILTER PILLS ── */
+.pill-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pill-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--border-radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--status-neutral-bg);
+  border: 1px solid var(--status-neutral-border);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  user-select: none;
+}
+.pill-filter:hover { border-color: var(--interactive-default); }
+.pill-filter .pill-count {
+  font-weight: 700;
+  color: var(--text-tertiary);
+}
+.pill-filter.active {
+  background: var(--interactive-bg-subtle);
+  border-color: var(--interactive-default);
+  color: var(--interactive-default);
+}
+.pill-filter.active .pill-count { color: var(--interactive-default); }
+.pill-filter-clear {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px 4px;
+  text-decoration: underline;
+}
+.pill-filter-clear:hover { color: var(--text-primary); }
+
+/* ── ROW LOCATION PILL (read-only, shown per job) ── */
+.row-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: var(--border-radius-full);
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--status-neutral-bg);
+  border: 1px solid var(--status-neutral-border);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.row-pill.is-proof-out { background: var(--status-warning-bg); border-color: var(--status-warning-border); color: var(--color-copper-600); }
+.row-pill.is-shipped    { background: var(--status-success-bg); border-color: var(--status-success-border); color: var(--color-green-800); }
+
+/* ── TABLE ── */
+.jobs-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.card { overflow: unset !important; }
+
+.col-job    { width: 8%; }
+.col-desc   { width: 24%; }
+.col-client { width: 20%; }
+.col-loc    { width: 16%; }
+.col-prod   { width: 12%; }
+.col-type   { width: 12%; }
+.col-date   { width: 8%; }
+
+.jobs-table thead tr { background: var(--bg-muted); border-bottom: 1px solid var(--border-default); }
+.jobs-table th {
+  padding: 0 16px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  text-align: left;
+  height: 44px;
+  vertical-align: middle;
+}
+.jobs-table th.col-job { padding-left: 16px; }
+.jobs-table th.th-date { text-align: right; }
+
+.jobs-table tbody tr { border-bottom: 1px solid var(--border-subtle); cursor: pointer; transition: background 0.12s; }
+.jobs-table tbody tr:last-child { border-bottom: none; }
+.jobs-table tbody tr:hover { background: var(--bg-muted); }
+.jobs-table tbody tr.row-hidden { display: none; }
+
+.jobs-table td { padding: 12px 16px; vertical-align: middle; font-size: 13px; color: var(--text-primary); }
+.jobs-table td.td-job { font-weight: 600; }
+.jobs-table td.td-date { text-align: right; color: var(--text-tertiary); font-size: 12px; }
+.jobs-table td.td-desc { color: var(--text-secondary); }
+
+.search-list-header {
+  border-radius: 8px 8px 0px 0px;
+  padding: 16px;
+  flex-direction: column;
+  gap: 12px;
+}
+.search-list-header input { width: 100%; }
+
+/* ── EMPTY STATE ── */
+.jobs-empty { padding: 48px 32px; text-align: center; color: var(--text-tertiary); font-size: 13px; }
+
+a.btn-secondary { text-decoration: none; }
