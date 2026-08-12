@@ -41,6 +41,33 @@
   margin-bottom: 20px;
 }
 
+/* ── SECONDARY DROPDOWN FILTER (e.g. client, on the sales board) ── */
+.sub-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.sub-filter label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.sub-filter select {
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  cursor: pointer;
+  outline: none;
+  min-width: 200px;
+}
+.sub-filter select:focus { border-color: var(--border-focus); }
+
 /* ── TOOLBAR ── */
 .jobs-toolbar {
   display: flex;
@@ -83,6 +110,22 @@
   color: var(--interactive-default);
 }
 .pill-filter.active .pill-count { color: var(--interactive-default); }
+/* Stops with nothing sitting at them — de-emphasised, still clickable */
+.pill-filter.is-empty {
+  background: transparent;
+  border-color: var(--border-tertiary);
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+.pill-filter.is-empty:hover { border-color: var(--interactive-default); }
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 .pill-filter-clear {
   font-size: 12px;
   color: var(--text-tertiary);
@@ -115,8 +158,9 @@
 .card { overflow: unset !important; }
 
 .col-job    { width: 8%; }
-.col-desc   { width: 24%; }
+.col-desc   { width: 22%; }
 .col-client { width: 20%; }
+.col-dept   { width: 12%; }
 .col-loc    { width: 16%; }
 .col-prod   { width: 12%; }
 .col-type   { width: 12%; }

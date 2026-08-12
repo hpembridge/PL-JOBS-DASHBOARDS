@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=optional"
     rel="stylesheet">
-  <link rel="stylesheet" href="shared/customer-management.css" />
+  <link rel="stylesheet" href="customer-management.css" />
   <link rel="stylesheet" href="jobs-dashboard.css" />
 </head>
 
@@ -41,7 +41,10 @@
         <div class="toolbar-actions">
           <div class="pill-filter-row" id="pill-row"></div>
         </div>
-        <button class="pill-filter-clear" id="clear-pills" onclick="clearPillFilter()" style="display:none">Clear filters</button>
+        <div class="toolbar-right">
+          <button class="pill-filter-clear" id="toggle-empty" onclick="toggleEmptyStops()"></button>
+          <button class="pill-filter-clear" id="clear-pills" onclick="clearPillFilter()" style="display:none">Clear filters</button>
+        </div>
       </div>
 
       <!-- Table -->
@@ -84,6 +87,7 @@
   <script>
     let currentDept = null;
     let activePillDescs = new Set();
+    let showEmptyStops = false;
 
     function initDeptSelect() {
       const sel = document.getElementById('dept-select');
@@ -96,6 +100,7 @@
       const desc = document.getElementById('dept-select').value;
       currentDept = DEPARTMENTS.find(d => d.desc === desc);
       activePillDescs = new Set();
+      showEmptyStops = false;
       render();
     }
 
@@ -112,6 +117,14 @@
       renderPills();
     }
 
+    // Departments like Creative Services and Bindery have 40+ scan locations,
+    // most of them empty at any given moment. Empty stops collapse behind a
+    // toggle so the pill row stays scannable.
+    function toggleEmptyStops() {
+      showEmptyStops = !showEmptyStops;
+      renderPills();
+    }
+
     function rowPillClass(desc) {
       if (/proof out/i.test(desc)) return 'row-pill is-proof-out';
       if (/shipped|billed/i.test(desc)) return 'row-pill is-shipped';
@@ -124,12 +137,33 @@
 
     function renderPills() {
       const jobs = jobsForDept();
+      const counts = {};
+      currentDept.locations.forEach(loc => {
+        counts[loc.desc] = jobs.filter(j => j.location === loc.desc).length;
+      });
+
+      const emptyCount = currentDept.locations.filter(loc => !counts[loc.desc]).length;
+      const visible = currentDept.locations.filter(loc =>
+        showEmptyStops || counts[loc.desc] || activePillDescs.has(loc.desc)
+      );
+
       const row = document.getElementById('pill-row');
-      row.innerHTML = currentDept.locations.map(loc => {
-        const count = jobs.filter(j => j.location === loc.desc).length;
+      row.innerHTML = visible.map(loc => {
         const active = activePillDescs.has(loc.desc) ? ' active' : '';
-        return `<button class="pill-filter${active}" onclick="togglePill('${loc.desc.replace(/'/g, "\\'")}')">${loc.desc}<span class="pill-count">${count}</span></button>`;
+        const empty = counts[loc.desc] ? '' : ' is-empty';
+        return `<button class="pill-filter${active}${empty}" onclick="togglePill('${loc.desc.replace(/'/g, "\\'")}')">${loc.desc}<span class="pill-count">${counts[loc.desc]}</span></button>`;
       }).join('');
+
+      const toggle = document.getElementById('toggle-empty');
+      if (emptyCount === 0) {
+        toggle.style.display = 'none';
+      } else {
+        toggle.style.display = '';
+        toggle.textContent = showEmptyStops
+          ? 'Hide ' + emptyCount + ' empty stops'
+          : 'Show ' + emptyCount + ' empty stops';
+      }
+
       document.getElementById('clear-pills').style.display = activePillDescs.size ? '' : 'none';
     }
 

@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=optional"
     rel="stylesheet">
-  <link rel="stylesheet" href="shared/customer-management.css" />
+  <link rel="stylesheet" href="customer-management.css" />
   <link rel="stylesheet" href="jobs-dashboard.css" />
 </head>
 
@@ -87,7 +87,7 @@
 
     function initPersonSelect() {
       const sel = document.getElementById('person-select');
-      sel.innerHTML = PEOPLE.map(p => `<option value="${p.name}">${p.name} — ${p.dept}</option>`).join('');
+      sel.innerHTML = PEOPLE.map(p => `<option value="${p.name}">${p.name} — ${p.deptLabel}</option>`).join('');
       currentPerson = PEOPLE[0];
       render();
     }
@@ -158,7 +158,7 @@
     }
 
     function render() {
-      document.getElementById('person-dept').textContent = currentPerson.dept + ' — jobs currently sitting at a scan location tied to ' + currentPerson.name + '.';
+      document.getElementById('person-dept').textContent = currentPerson.deptLabel + ' — jobs currently sitting at a scan location tied to ' + currentPerson.name + '.';
       renderPills();
       renderTable();
     }
