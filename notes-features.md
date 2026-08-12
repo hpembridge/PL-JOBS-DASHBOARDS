@@ -1,35 +1,28 @@
-All four boards are kanban. Lanes are what used to be filter pills.
+## card
+- job number
+- job description
+- (customer number) customer name
+- management group
+- **OPTIONAL** status label (appears on sales dashboards, for example)
 
-### Card (per wireframe)
-- job number, description, customer name, MANAGEMENT GROUP
-- colored stripe down the right edge = production type
-- gray = bindery, yellow = print/press, blue = PDF only (from the wireframe)
-- mint = paper, copper = woodshop, grape = menu hardware (added so all six types are distinguishable)
-- cherry = press proof (7th type, added for the page layout allocation queue)
-- production type / job type / created date live in the tooltip, to keep the card face as clean as the wireframe
-- legend sits above every board, since the stripe is the only production-type cue on the card
-- where a lane covers more than one stop, the card also shows its actual scan location as a pill
+- considering some additional fields here but really want to keep the face of the card clean
+    - job type (helpful for sales, creative)
+    - salesperson (helpful for creative, maybe dept dashboards like bindery flow)
+    - current hours recorded (helpful for sales)
 
-### My Active Jobs (Creative & Production)
-- "Viewing as" picker swaps between anyone with a personal scan location
-- lanes = that person's own locations, so usually two: Working and Proof Out
+## sales dashboard
+- each lane is the department of the location it is scanned to
+- status label appears on card
 
-### Department Jobs (Bindery, Woodshop, Press, Pre-Press, Shipping, Accounting, Creative)
-- one shared board per department
-- lanes = every scan location under that department, including stops owned by a named individual
-- empty stops collapse to a narrow rail with a vertical label; click one to open, or "Expand N empty stops" for all
-- **Creative Services is special-cased**: only the 8 shared stops get lanes, then one combined Working lane and one combined Proof Out lane, with the real scan location as a pill on each card. 10 lanes instead of 40.
+## CSR dashboard
+- same setup as sales, but with a multi-select picker for sales team
 
-### My Clients' Active Jobs (Sales)
-- job set scoped by client attachment; lanes = the department the job is currently sitting in
-- lets a rep see how much of their book is in art vs. on the floor vs. ready to ship
-- only departments the rep has work in get a lane
-- client dropdown removed — search covers customer name and management group
-- each card shows its actual scan location as a pill, since a lane covers many stops
+## Allocation Dashboard (maybe this is a phase 2)
+- i think we need to add another scan location for each designers "inbox"
+- fixed left lane for page layout or bindery allocation & potentially pull plate inbox
+- colin and megan can just click & drag
 
-### Allocation
-- segmented toggle: Page Layout (printing, PDF only, paper, press proof) or Bindery (bindery, woodshop only, menu hardware)
-- first lane is the allocation stop itself — Page Layout Allocation or Bindery Allocation — gold-accented as the source column, and pinned to the left edge so it stays visible while the inboxes scroll past
-- then one lane per designer, "<Name> - Inbox", which is that designer's own working stop
-- legend narrows to just the production types that allocator handles
-
+## Person dashboard
+- maybe this is something we need to set up in user management?
+- or we need pre-press to have real names that we can match to the users name
+- also abigails name is spelled wrong on one of her statuses
