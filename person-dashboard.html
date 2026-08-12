@@ -36,44 +36,16 @@
       </div>
       <div class="dept-meta" id="person-dept"></div>
 
-      <!-- Toolbar -->
-      <div class="jobs-toolbar">
-        <div class="toolbar-actions">
-          <div class="pill-filter-row" id="pill-row"></div>
-          <button class="pill-filter-clear" id="clear-pills" onclick="clearPillFilter()" style="display:none">Clear</button>
+      <div class="board-toolbar">
+        <div class="search-container">
+          <i class="fa-regular fa-magnifying-glass"></i>
+          <input type="text" id="search-input" class="search-input" placeholder="Search my jobs..." autocomplete="off" />
         </div>
       </div>
+      <div class="legend" id="legend"></div>
 
-      <!-- Table -->
-      <div class="card" style="display:block;">
-        <div class="search-list-header">
-          <input id="search-input" placeholder="Search my jobs..." />
-        </div>
-        <table class="jobs-table">
-          <colgroup>
-            <col class="col-job">
-            <col class="col-desc">
-            <col class="col-client">
-            <col class="col-loc">
-            <col class="col-prod">
-            <col class="col-type">
-            <col class="col-date">
-          </colgroup>
-          <thead>
-            <tr>
-              <th class="col-job">Job #</th>
-              <th class="col-desc">Description</th>
-              <th class="col-client">Client</th>
-              <th class="col-loc">Scan Location</th>
-              <th class="col-prod">Production Type</th>
-              <th class="col-type">Job Type</th>
-              <th class="th-date">Created</th>
-            </tr>
-          </thead>
-          <tbody id="jobs-tbody"></tbody>
-        </table>
-        <div class="jobs-empty" id="jobs-empty" style="display:none">No jobs match the current filters.</div>
-      </div>
+      <!-- ── BOARD ── -->
+      <div class="kanban" id="kanban"></div>
 
     </div><!-- /page-content -->
   </div><!-- /main -->
@@ -83,89 +55,48 @@
   <script src="mock-data.js"></script>
   <script>
     let currentPerson = null;
-    let activePillDescs = new Set();
+    const expandedLanes = new Set();   // lanes the user has manually opened
 
     function initPersonSelect() {
       const sel = document.getElementById('person-select');
       sel.innerHTML = PEOPLE.map(p => `<option value="${p.name}">${p.name} — ${p.deptLabel}</option>`).join('');
       currentPerson = PEOPLE[0];
+      document.getElementById('legend').innerHTML = legendHTML();
       render();
     }
 
     function onPersonChange() {
-      const name = document.getElementById('person-select').value;
-      currentPerson = PEOPLE.find(p => p.name === name);
-      activePillDescs = new Set();
+      currentPerson = PEOPLE.find(p => p.name === document.getElementById('person-select').value);
+      expandedLanes.clear();
       render();
     }
 
-    function togglePill(desc) {
-      if (activePillDescs.has(desc)) activePillDescs.delete(desc);
-      else activePillDescs.add(desc);
-      renderTable();
-      renderPills();
+    function toggleLane(key) {
+      if (expandedLanes.has(key)) expandedLanes.delete(key);
+      else expandedLanes.add(key);
+      renderBoard();
     }
 
-    function clearPillFilter() {
-      activePillDescs = new Set();
-      renderTable();
-      renderPills();
-    }
-
-    function rowPillClass(desc) {
-      if (/proof out/i.test(desc)) return 'row-pill is-proof-out';
-      if (/shipped/i.test(desc)) return 'row-pill is-shipped';
-      return 'row-pill';
-    }
-
-    function jobsForPerson() {
-      return JOBS.filter(j => j.person === currentPerson.name);
-    }
-
-    function renderPills() {
-      const jobs = jobsForPerson();
-      const row = document.getElementById('pill-row');
-      row.innerHTML = currentPerson.locations.map(loc => {
-        const count = jobs.filter(j => j.location === loc.desc).length;
-        const active = activePillDescs.has(loc.desc) ? ' active' : '';
-        return `<button class="pill-filter${active}" onclick="togglePill('${loc.desc.replace(/'/g, "\\'")}')">${loc.label}<span class="pill-count">${count}</span></button>`;
-      }).join('');
-      document.getElementById('clear-pills').style.display = activePillDescs.size ? '' : 'none';
-    }
-
-    function renderTable() {
+    // Lanes are this person's own scan locations.
+    function renderBoard() {
       const q = (document.getElementById('search-input').value || '').toLowerCase().trim();
-      const tbody = document.getElementById('jobs-tbody');
-      const jobs = jobsForPerson().filter(j => {
-        const pillMatch = activePillDescs.size === 0 || activePillDescs.has(j.location);
-        const searchMatch = !q || j.desc.toLowerCase().includes(q) || String(j.job).includes(q) || j.client.toLowerCase().includes(q);
-        return pillMatch && searchMatch;
-      });
+      const mine = JOBS.filter(j => j.person === currentPerson.name && (
+        !q || j.desc.toLowerCase().includes(q) || String(j.job).includes(q) ||
+        j.customer.toLowerCase().includes(q) || j.mgmtGroup.toLowerCase().includes(q)
+      ));
 
-      tbody.innerHTML = jobs.map(j => `
-        <tr onclick="goToJob(${j.job})">
-          <td class="td-job">${j.job}</td>
-          <td class="td-desc">${j.desc}</td>
-          <td>${j.client}</td>
-          <td><span class="${rowPillClass(j.location)}">${j.location}</span></td>
-          <td>${j.prodType}</td>
-          <td>${j.jobType}</td>
-          <td class="td-date">${j.date}</td>
-        </tr>
-      `).join('');
-
-      document.getElementById('jobs-empty').style.display = jobs.length === 0 ? '' : 'none';
+      document.getElementById('kanban').innerHTML = currentPerson.locations.map(loc =>
+        laneHTML(loc.desc, loc.label, mine.filter(j => j.location === loc.desc), expandedLanes)
+      ).join('');
     }
 
     function render() {
-      document.getElementById('person-dept').textContent = currentPerson.deptLabel + ' — jobs currently sitting at a scan location tied to ' + currentPerson.name + '.';
-      renderPills();
-      renderTable();
+      document.getElementById('person-dept').textContent =
+        currentPerson.deptLabel + ' — jobs currently sitting at a scan location tied to ' + currentPerson.name + '.';
+      renderBoard();
     }
 
-    function goToJob(jobNum) {
-      showToast('Opening job #' + jobNum + '…');
-    }
+    function goToJob(jobNum) { showToast('Opening job #' + jobNum + '…'); }
 
     function showToast(msg) {
       const t = document.getElementById('toast');
@@ -174,8 +105,7 @@
       setTimeout(() => t.classList.remove('show'), 2200);
     }
 
-    document.getElementById('search-input').addEventListener('input', renderTable);
-
+    document.getElementById('search-input').addEventListener('input', renderBoard);
     initPersonSelect();
   </script>
 </body>

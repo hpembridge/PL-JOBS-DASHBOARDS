@@ -1,26 +1,35 @@
+All four boards are kanban. Lanes are what used to be filter pills.
+
+### Card (per wireframe)
+- job number, description, customer name, MANAGEMENT GROUP
+- colored stripe down the right edge = production type
+- gray = bindery, yellow = print/press, blue = PDF only (from the wireframe)
+- mint = paper, copper = woodshop, grape = menu hardware (added so all six types are distinguishable)
+- cherry = press proof (7th type, added for the page layout allocation queue)
+- production type / job type / created date live in the tooltip, to keep the card face as clean as the wireframe
+- legend sits above every board, since the stripe is the only production-type cue on the card
+- where a lane covers more than one stop, the card also shows its actual scan location as a pill
+
 ### My Active Jobs (Creative & Production)
-- one page, "Viewing as" picker swaps between anyone with a personal scan location
-- filter pills = only that person's own locations (1-2 pills for most people)
-- row shows that job's current scan location as a read-only pill too
+- "Viewing as" picker swaps between anyone with a personal scan location
+- lanes = that person's own locations, so usually two: Working and Proof Out
 
 ### Department Jobs (Bindery, Woodshop, Press, Pre-Press, Shipping, Accounting, Creative)
-- one shared board per department, not per person
-- filter pills = every scan location under that department, derived from the real location table — including stops owned by a named individual, so a department lead sees those jobs too
-- empty stops collapse behind a "Show N empty stops" toggle
-- **Creative Services produces 40 occupied pills** because most of its stops are individual designers and proof-out queues. Needs grouping — see README.
+- one shared board per department
+- lanes = every scan location under that department, including stops owned by a named individual
+- empty stops collapse to a narrow rail with a vertical label; click one to open, or "Expand N empty stops" for all
+- **Creative Services is special-cased**: only the 8 shared stops get lanes, then one combined Working lane and one combined Proof Out lane, with the real scan location as a pill on each card. 10 lanes instead of 40.
 
 ### My Clients' Active Jobs (Sales)
-- job set is scoped by client attachment; **filter pills are the department the job's scan location belongs to**
+- job set scoped by client attachment; lanes = the department the job is currently sitting in
 - lets a rep see how much of their book is in art vs. on the floor vs. ready to ship
-- pills only appear for departments the rep has jobs in; multi-select
-- client is a separate dropdown below the pills, and pill counts rescope to the selected client
-- `Unassigned` pill covers stops with no DEPARTMENT_DESC (In Production, Outside Services, outside vendors, etc.)
+- only departments the rep has work in get a lane
+- client dropdown removed — search covers customer name and management group
+- each card shows its actual scan location as a pill, since a lane covers many stops
 
-## Data
-- `mock-data.js` carries the real job_locations.xlsx table (161 rows) as `LOCATIONS`
-- every job's department is derived from its scan location via `deptOf()` — nothing hardcoded
-- jobs, clients, and rep→client assignment are invented
+### Allocation
+- segmented toggle: Page Layout (printing, PDF only, paper, press proof) or Bindery (bindery, woodshop only, menu hardware)
+- first lane is the allocation stop itself — Page Layout Allocation or Bindery Allocation — gold-accented as the source column, and pinned to the left edge so it stays visible while the inboxes scroll past
+- then one lane per designer, "<Name> - Inbox", which is that designer's own working stop
+- legend narrows to just the production types that allocator handles
 
-## Styling
-- lifted straight from `customer-jobs.html`'s table/toolbar/search-header/card styling
-- new: `.viewing-as` switcher, `.pill-filter` row, `.row-pill` read-only chip, `.sub-filter` dropdown

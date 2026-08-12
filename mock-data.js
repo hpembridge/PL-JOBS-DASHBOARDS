@@ -84,16 +84,15 @@ const LOCATIONS = [
   { dept: '104 - Creative Services', desc: 'Proof Out', statusId: 18 },
   { dept: '104 - Creative Services', desc: 'Final Proofreading', statusId: 304 },
   { dept: '106 - Accounting', desc: 'Accounting', statusId: 937 },
-  { dept: '106 - Accounting', desc: '1/4 Round Corner Machine', statusId: 500 },
-  { dept: '106 - Accounting', desc: '1/8 Round Corner Machine', statusId: 501 },
   { dept: '106 - Accounting', desc: 'Billed', statusId: 95 },
   { dept: '106 - Accounting', desc: 'No Charge', statusId: 96 },
   { dept: '107 - Press', desc: 'Bindery Coiling', statusId: 718 },
-  { dept: '107 - Press', desc: 'Kristen M - Proof Out', statusId: 601 },
+  { dept: '107 - Press', desc: '1/4 Round Corner Machine', statusId: 500 },
+  { dept: '107 - Press', desc: '1/8 Round Corner Machine', statusId: 501 },
   { dept: '107 - Press', desc: 'Mike-Plated', statusId: 602 },
   { dept: '107 - Press', desc: 'Barry-Plated', statusId: 603 },
   { dept: '107 - Press', desc: 'David-Plated', statusId: 604 },
-  { dept: '107 - Press', desc: 'Kristen M - Plated', statusId: 605 },
+  { dept: '107 - Press', desc: 'Kristen M - PLATED', statusId: 605 },
   { dept: '107 - Press', desc: 'Epson Printer', statusId: 606 },
   { dept: '107 - Press', desc: 'Jobs On Hold', statusId: 78 },
   { dept: '107 - Press', desc: 'Press Proof', statusId: 998 },
@@ -185,16 +184,20 @@ const DEPT_BY_LOCATION = {};
 LOCATIONS.forEach(l => { DEPT_BY_LOCATION[l.desc] = l.dept; });
 
 // Short, pill-friendly labels for each department
+// Key order here drives the sales board's lane order (laneOrder() below
+// just walks Object.keys()) — kept in the shop's actual production
+// sequence: sales → creative → pre-press → press → bindery → woodshop →
+// shipping → accounting, with Unassigned tacked on last.
 const DEPT_SHORT_NAME = {
   '100 - Sales':              'Sales',
   '102 - Office':             'Office',
   '104 - Creative Services':  'Creative Services',
-  '106 - Accounting':         'Accounting',
+  '110 - Pre Press':          'Pre-Press',
   '107 - Press':              'Press',
   '108 - Bindery':            'Bindery',
   '109 - Wood':               'Woodshop',
-  '110 - Pre Press':          'Pre-Press',
   '112 - Shipping':           'Shipping',
+  '106 - Accounting':         'Accounting',
 };
 const UNASSIGNED_DEPT = 'Unassigned';
 
@@ -262,8 +265,7 @@ const PEOPLE = [
     { label: 'Proof Out',  desc: 'Jordan S - Proof Out' },
   ]},
   { name: 'Kristen M',       locations: [
-    { label: 'Proof Out',  desc: 'Kristen M - Proof Out' },
-    { label: 'Plated',     desc: 'Kristen M - Plated' },
+    { label: 'Plated',     desc: 'Kristen M - PLATED' },
   ]},
   { name: 'Mike',            locations: [
     { label: 'Plated',     desc: 'Mike-Plated' },
@@ -304,26 +306,46 @@ const DEPARTMENTS = DEPT_BOARD_ORDER.map(desc => ({
 }));
 
 // ── Sales reps and the client accounts they carry ──
+// customer = the property/account itself, group = its management group.
+// Mirrors the customer page hierarchy: (1234) Marriott International ›
+// (0001) The Marriott Cleveland Downtown.
 const SALES_REPS = [
   { name: 'Jordan Reyes', clients: [
-    'Marriott International — The Marriott Cleveland Downtown',
-    'Marriott International — The Ritz-Carlton Key Biscayne',
-    'Boyd Gaming — The Orleans',
+    { customer: 'The Marriott Cleveland Downtown', group: 'Marriott International' },
+    { customer: 'The Ritz-Carlton Key Biscayne',   group: 'Marriott International' },
+    { customer: 'The Orleans',                     group: 'Boyd Gaming' },
   ]},
   { name: 'Casey Malone', clients: [
-    'Live! Hospitality — Live! Casino Philadelphia',
-    'Quaker Steak & Lube — Corporate',
-    'Top Golf — Independence',
+    { customer: 'Live! Casino Philadelphia', group: 'Live! Hospitality' },
+    { customer: 'Quaker Steak & Lube Sheffield', group: 'Quaker Steak & Lube' },
+    { customer: 'Top Golf Independence',     group: 'Top Golf' },
   ]},
   { name: 'Priya Nair', clients: [
-    'True Food Kitchen — Corporate',
-    'Cinepolis — Cinepolis Luxury Cinemas',
-    "Keke's — Franchise Group East",
+    { customer: 'True Food Kitchen Legacy Village', group: 'True Food Kitchen' },
+    { customer: 'Cinepolis Luxury Cinemas',         group: 'Cinepolis' },
+    { customer: "Keke's Breakfast Cafe #214",       group: "Keke's" },
   ]},
 ];
 
-const PROD_TYPES = ['Bindery', 'Printing', 'Paper', 'PDF Only', 'Woodshop Only', 'Menu Hardware'];
+// The first six match the Production Type filter on the customer jobs page.
+// 'Press Proof' is here because it's one of the job kinds the page layout
+// allocator handles — it isn't in that filter dropdown, so confirm it really
+// is a production type in Platinum and not something else.
+const PROD_TYPES = ['Bindery', 'Printing', 'Paper', 'PDF Only', 'Woodshop Only', 'Menu Hardware', 'Press Proof'];
 const JOB_TYPES  = ['New Job', 'Rerun w/ Changes', 'Pull-Plate', 'Inventory Release', 'Replacement Ticket'];
+
+// Production type → card stripe colour class (see jobs-dashboard.css).
+// Grey / yellow / blue are from the wireframe; the rest are on-system
+// additions so every type is distinguishable.
+const PROD_CLASS = {
+  'Bindery':       'prod-bindery',   // grey
+  'Printing':      'prod-printing',  // yellow
+  'PDF Only':      'prod-pdf',       // blue
+  'Paper':         'prod-paper',     // mint
+  'Woodshop Only': 'prod-wood',      // copper
+  'Menu Hardware': 'prod-hardware',  // grape
+  'Press Proof':   'prod-pressproof',// cherry
+};
 
 function pick(arr, i) { return arr[i % arr.length]; }
 
@@ -349,7 +371,7 @@ const JOB_DESCRIPTIONS = [
 const JOBS = [];
 let jobCounter = 118400;
 
-function addJob({ locationDesc, person = null, client = null, rep = null }) {
+function addJob({ locationDesc, person = null, client = null, rep = null, forceProdType = null }) {
   jobCounter -= (3 + (jobCounter % 5));
   const i = JOBS.length;
   const daysAgo = 1 + (i * 3) % 60;
@@ -357,28 +379,38 @@ function addJob({ locationDesc, person = null, client = null, rep = null }) {
   date.setDate(date.getDate() - daysAgo);
   const dateStr = (date.getMonth() + 1) + '/' + date.getDate() + '/' + date.getFullYear();
 
-  let repName = rep, clientName = client;
-  if (!repName) {
-    const r = pick(SALES_REPS, i);
+  let repName = rep, account = client;
+  if (!account) {
+    const r = rep ? SALES_REPS.find(x => x.name === rep) : pick(SALES_REPS, i);
     repName = r.name;
     // Different stride than the rep pick so each rep's clients actually
     // rotate instead of every job landing on client[0].
-    clientName = client || pick(r.clients, Math.floor(i / SALES_REPS.length) + i);
+    account = pick(r.clients, Math.floor(i / SALES_REPS.length) + i);
   }
 
   const dept = deptOf(locationDesc);
+  // Stride matters here: rep is i % 3 (SALES_REPS.length). The previous
+  // stride (i*2 + floor(i/3)) was tuned for PROD_TYPES.length === 6, but
+  // adding 'Press Proof' made it 7 — and floor(i/3) advances by exactly 1
+  // every 3 steps, so over one full rep cycle (i, i+3, i+6, ...) the index
+  // drifts by 3*2+1 = 7, which is 0 mod 7. That locked every rep onto a
+  // single production type. Fix: no term tied to the rep's cycle length —
+  // a plain odd multiplier has no periodic relationship to i % 3.
+  const prodType = forceProdType || pick(PROD_TYPES, i * 5 + 1);
 
   JOBS.push({
     job: jobCounter,
     desc: pick(JOB_DESCRIPTIONS, i),
-    client: clientName,
+    customer: account.customer,          // e.g. 'The Marriott Cleveland Downtown'
+    mgmtGroup: account.group,            // e.g. 'Marriott International'
     rep: repName,
     location: locationDesc,
     statusId: (LOCATIONS.find(l => l.desc === locationDesc) || {}).statusId,
-    dept,                          // canonical, e.g. '108 - Bindery' or null
-    deptLabel: deptLabel(dept),    // pill-friendly, e.g. 'Bindery' / 'Unassigned'
+    dept,                                // canonical, e.g. '108 - Bindery' or null
+    deptLabel: deptLabel(dept),          // short label, e.g. 'Bindery' / 'Unassigned'
     person: person ? person.name : null,
-    prodType: pick(PROD_TYPES, i),
+    prodType,
+    prodClass: PROD_CLASS[prodType],
     jobType: pick(JOB_TYPES, i + 1),
     date: dateStr,
   });
@@ -408,5 +440,135 @@ SALES_REPS.forEach((rep, ri) => {
   rep.clients.forEach((client, ci) => {
     addJob({ locationDesc: 'In Production', client, rep: rep.name });
     if ((ri + ci) % 2 === 0) addJob({ locationDesc: 'Outside Services', client, rep: rep.name });
+  });
+});
+
+// ── Creative Services lane grouping ──
+// Creative has 46 stops and 30-odd of them are individual designers plus their
+// proof-out queues, which made for a 40-lane board. Instead the board shows the
+// shared stops as their own lanes, then rolls every designer stop into one
+// combined Working lane and one combined Proof Out lane, with the actual scan
+// location shown as a pill on each card.
+const CREATIVE_SHARED_STOPS = [
+  'Page Layout Allocation',
+  'Bindery Allocation',
+  'Pull Plate Inbox',
+  'Proofreading',
+  'Final Proofreading',
+  'Art Hold',
+  'Prototype Production',
+  'Prototype Completed',
+];
+const CREATIVE_DEPT = '104 - Creative Services';
+
+function isProofOutStop(desc) { return /proof out/i.test(desc); }
+function isCreativeSharedStop(desc) { return CREATIVE_SHARED_STOPS.indexOf(desc) !== -1; }
+
+// Press has the same many-individual-stops shape as Creative, just smaller:
+// Mike, Barry, David and Kristen M each have their own "-Plated" stop. The
+// department board combines those into one Plated lane, with the actual
+// stop shown as a pill on each card.
+const PRESS_DEPT = '107 - Press';
+const PRESS_PLATED_STOPS = ['Mike-Plated', 'Barry-Plated', 'David-Plated', 'Kristen M - PLATED'];
+function isPressPlatedStop(desc) { return PRESS_PLATED_STOPS.indexOf(desc) !== -1; }
+
+// Pre-Press has its own set of individual proof-out queues (Mix Master Mike,
+// Money Mitch, Da Barons, DJ Skittles). Same treatment: combine into one
+// Proof Out lane, with the actual stop shown as a pill on each card.
+const PRE_PRESS_DEPT = '110 - Pre Press';
+
+// ── Allocation board ──
+// One toggle picks which allocator's queue you're looking at. Each view has its
+// own allocation stop as the first lane, then a lane per designer inbox.
+const ALLOCATION_VIEWS = [
+  {
+    key: 'layout',
+    label: 'Page Layout',
+    allocationStop: 'Page Layout Allocation',
+    prodTypes: ['Printing', 'PDF Only', 'Paper', 'Press Proof'],
+  },
+  {
+    key: 'bindery',
+    label: 'Bindery',
+    allocationStop: 'Bindery Allocation',
+    prodTypes: ['Bindery', 'Woodshop Only', 'Menu Hardware'],
+  },
+];
+
+// Designers who take allocated work — Creative Services people with their own
+// scan location. Their "inbox" lane is that working stop.
+const DESIGNERS = PEOPLE.filter(p => p.dept === CREATIVE_DEPT);
+
+// ── Shared card renderer ──
+// Every board draws the same card, per the wireframe: job number, description,
+// customer name, management group, and a production-type stripe down the right
+// edge. opts.showLocation adds the job's actual scan location as a pill — used
+// wherever a lane holds more than one stop.
+function jobCardHTML(j, opts) {
+  opts = opts || {};
+  const pill = opts.showLocation
+    ? `<div class="card-pills"><span class="card-pill">${j.location}</span></div>`
+    : '';
+  return `
+    <div class="job-card ${j.prodClass}" onclick="goToJob(${j.job})" title="${j.prodType} · ${j.jobType} · created ${j.date}">
+      <div class="card-body">
+        <div class="card-job">${j.job}</div>
+        <div class="card-desc">${j.desc}</div>
+        <div class="card-customer">${j.customer}</div>
+        <div class="card-mgmt">${j.mgmtGroup}</div>
+        ${pill}
+      </div>
+      <div class="card-stripe"></div>
+    </div>`;
+}
+
+// ── Shared legend renderer ──
+// Pass a list of production types to show only those (the allocation board
+// only ever shows one group at a time).
+function legendHTML(types) {
+  return (types || PROD_TYPES).map(t =>
+    `<span class="legend-item"><span class="legend-swatch ${PROD_CLASS[t]}"></span>${t}</span>`
+  ).join('');
+}
+
+// ── Shared lane renderer ──
+// A lane is collapsed when it has no cards, unless the user has expanded it.
+function laneHTML(key, title, jobs, expandedSet, opts) {
+  opts = opts || {};
+  const collapsed = jobs.length === 0 && !expandedSet.has(key);
+  const safeKey = String(key).replace(/'/g, "\\'");
+  const extra = opts.laneClass ? ' ' + opts.laneClass : '';
+  return `
+    <div class="lane${extra}${collapsed ? ' is-collapsed' : ''}">
+      <div class="lane-header" onclick="toggleLane('${safeKey}')" title="${title}">
+        <span class="lane-title">${title}</span>
+        <span class="lane-count">${jobs.length}</span>
+        <i class="fa-solid fa-chevron-${collapsed ? 'right' : 'down'} lane-collapse-icon"></i>
+      </div>
+      <div class="lane-cards">
+        ${jobs.length ? jobs.map(j => jobCardHTML(j, opts)).join('') : '<div class="lane-empty">Nothing here</div>'}
+      </div>
+    </div>`;
+}
+
+// ── Allocation board seeding ──
+// Runs last because it needs DESIGNERS. Puts work in both allocators' queues
+// and in designers' inboxes so both toggle views have something to show.
+ALLOCATION_VIEWS.forEach((view, vi) => {
+  // Waiting to be allocated — sitting in the allocation stop itself.
+  view.prodTypes.forEach((pt, pi) => {
+    const count = pi % 2 === 0 ? 2 : 1;
+    for (let k = 0; k < count; k++) {
+      addJob({ locationDesc: view.allocationStop, forceProdType: pt });
+    }
+  });
+  // Already allocated — sitting in a designer's inbox.
+  DESIGNERS.forEach((d, di) => {
+    if ((di + vi) % 3 === 0) return;          // leave some inboxes empty
+    addJob({
+      locationDesc: d.locations[0].desc,
+      person: d,
+      forceProdType: pick(view.prodTypes, di + vi),
+    });
   });
 });

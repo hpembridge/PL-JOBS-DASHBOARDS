@@ -1,11 +1,30 @@
 /**
  * Active Jobs Dashboards — shared styles
- * Table styling lifted from PL-CM-1.5/customer-jobs.html so this feels
- * like the same app. Adds: viewing-as switcher, location pills (both
- * as row chips and as toggleable filters), department/person picker.
+ * ─────────────────────────────────────────────────────────────
+ * Kanban board. Lanes are what used to be filter pills:
+ *   person board      → that person's own scan locations
+ *   department board  → every scan location in the department
+ *   sales board       → the department each job is sitting in
+ *
+ * Card treatment follows Healey's wireframe: job number, description,
+ * customer name, management group, and a colored stripe down the right
+ * edge keyed to production type.
+ *
+ * Chrome (topbar, breadcrumb, search input, buttons) is inherited from
+ * customer-management.css + design-tokens.css so this matches the rest
+ * of the app.
  */
 
-.page-content { max-width: var(--container-data); }
+.page-content {
+  max-width: none;
+  /* width:100% comes from customer-management.css — with side margins that
+     overflows the viewport, so reset it and let the margins do the work. */
+  width: auto;
+  margin: 24px 32px 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
 
 /* ── VIEWING AS SWITCHER ── */
 .viewing-as {
@@ -35,98 +54,27 @@
 }
 .viewing-as select:focus { border-color: var(--border-focus); }
 
-.dept-meta {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  margin-bottom: 20px;
-}
 
-/* ── SECONDARY DROPDOWN FILTER (e.g. client, on the sales board) ── */
-.sub-filter {
+/* ── BOARD TOOLBAR ── */
+.board-toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-.sub-filter label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-}
-.sub-filter select {
-  border: 1.5px solid var(--border-subtle);
-  border-radius: 6px;
-  padding: 5px 10px;
-  font-size: 12px;
-  color: var(--text-primary);
-  background: var(--bg-surface);
-  cursor: pointer;
-  outline: none;
-  min-width: 200px;
-}
-.sub-filter select:focus { border-color: var(--border-focus); }
-
-/* ── TOOLBAR ── */
-.jobs-toolbar {
-  display: flex;
-  align-items: flex-start;
   justify-content: space-between;
-  margin: 16px 0px;
   gap: 16px;
+  margin-bottom: 12px;
 }
-.toolbar-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-
-/* ── STATUS/LOCATION FILTER PILLS ── */
-.pill-filter-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.board-toolbar .search-container {
+  flex: 0 1 320px;
+  background: var(--bg-surface);
 }
-.pill-filter {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  border-radius: var(--border-radius-full);
-  font-size: 12px;
-  font-weight: 600;
-  background: var(--status-neutral-bg);
-  border: 1px solid var(--status-neutral-border);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-  user-select: none;
-}
-.pill-filter:hover { border-color: var(--interactive-default); }
-.pill-filter .pill-count {
-  font-weight: 700;
-  color: var(--text-tertiary);
-}
-.pill-filter.active {
-  background: var(--interactive-bg-subtle);
-  border-color: var(--interactive-default);
-  color: var(--interactive-default);
-}
-.pill-filter.active .pill-count { color: var(--interactive-default); }
-/* Stops with nothing sitting at them — de-emphasised, still clickable */
-.pill-filter.is-empty {
-  background: transparent;
-  border-color: var(--border-tertiary);
-  color: var(--text-tertiary);
-  font-weight: 500;
-}
-.pill-filter.is-empty:hover { border-color: var(--interactive-default); }
-
 .toolbar-right {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 12px;
   flex-shrink: 0;
   white-space: nowrap;
 }
-.pill-filter-clear {
+.text-btn {
   font-size: 12px;
   color: var(--text-tertiary);
   background: none;
@@ -135,71 +83,322 @@
   padding: 5px 4px;
   text-decoration: underline;
 }
-.pill-filter-clear:hover { color: var(--text-primary); }
+.text-btn:hover { color: var(--text-primary); }
 
-/* ── ROW LOCATION PILL (read-only, shown per job) ── */
-.row-pill {
+/* ── PRODUCTION TYPE LEGEND ──
+   The stripe colour is the only production-type cue on a card, so the
+   board carries a legend rather than relying on colour alone. */
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-tertiary);
+}
+.legend-item {
   display: inline-flex;
   align-items: center;
-  padding: 2px 9px;
-  border-radius: var(--border-radius-full);
+  gap: 6px;
   font-size: 11px;
-  font-weight: 600;
-  background: var(--status-neutral-bg);
-  border: 1px solid var(--status-neutral-border);
   color: var(--text-secondary);
-  white-space: nowrap;
 }
-.row-pill.is-proof-out { background: var(--status-warning-bg); border-color: var(--status-warning-border); color: var(--color-copper-600); }
-.row-pill.is-shipped    { background: var(--status-success-bg); border-color: var(--status-success-border); color: var(--color-green-800); }
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1.5px solid;
+  flex-shrink: 0;
+}
 
-/* ── TABLE ── */
-.jobs-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-.card { overflow: unset !important; }
+/* ── PRODUCTION TYPE COLOURS ──
+   Three come straight from the wireframe (bindery grey, print/press
+   yellow, PDF-only blue). The other three are pulled from the token
+   palette to stay on-system: paper → mint, woodshop → copper (reads as
+   wood), menu hardware → grape. */
+.prod-bindery  { --stripe-fill: var(--color-titanium-600);     --stripe-line: var(--color-titanium-900); }
+.prod-printing { --stripe-fill: var(--color-gold-300);         --stripe-line: var(--color-gold-600); }
+.prod-pdf      { --stripe-fill: var(--datacolor-blueberry-01); --stripe-line: var(--datacolor-blueberry-04); }
+.prod-paper    { --stripe-fill: var(--datacolor-mint-01);      --stripe-line: var(--datacolor-mint-04); }
+.prod-wood     { --stripe-fill: var(--datacolor-orange-01);    --stripe-line: var(--color-copper-500); }
+.prod-hardware { --stripe-fill: var(--datacolor-grape-01);     --stripe-line: var(--datacolor-grape-04); }
 
-.col-job    { width: 8%; }
-.col-desc   { width: 22%; }
-.col-client { width: 20%; }
-.col-dept   { width: 12%; }
-.col-loc    { width: 16%; }
-.col-prod   { width: 12%; }
-.col-type   { width: 12%; }
-.col-date   { width: 8%; }
+.legend-swatch.prod-bindery,
+.legend-swatch.prod-printing,
+.legend-swatch.prod-pdf,
+.legend-swatch.prod-paper,
+.legend-swatch.prod-wood,
+.legend-swatch.prod-hardware {
+  background: var(--stripe-fill);
+  border-color: var(--stripe-line);
+}
 
-.jobs-table thead tr { background: var(--bg-muted); border-bottom: 1px solid var(--border-default); }
-.jobs-table th {
-  padding: 0 16px;
+/* ── KANBAN BOARD ── */
+.kanban {
+  display: flex;
+  align-items: stretch;   /* all lanes full height, like a proper board */
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 16px;
+  height: calc(100vh - 250px);
+  min-height: 360px;
+}
+
+/* ── LANE ── */
+.lane {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 288px;
+  width: 288px;
+  height: 100%;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  min-height: 0;
+}
+
+.lane-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+}
+.lane-header:hover .lane-title { color: var(--interactive-default); }
+.lane-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+.lane-count {
   font-size: 11px;
   font-weight: 700;
+  color: var(--text-tertiary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-tertiary);
+  border-radius: var(--border-radius-full);
+  padding: 1px 8px;
+  flex-shrink: 0;
+}
+.lane-collapse-icon {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.lane-cards {
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+}
+.lane-empty {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-align: center;
+  padding: 20px 8px;
+  border: 1px dashed var(--border-tertiary);
+  border-radius: 8px;
+}
+
+/* ── COLLAPSED LANE ──
+   Empty stops collapse to a rail so the board stays scannable without
+   pretending the stop doesn't exist. Click to expand. */
+.lane.is-collapsed {
+  flex: 0 0 44px;
+  width: 44px;
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--border-tertiary);
+}
+.lane.is-collapsed .lane-header {
+  flex-direction: column;
+  border-bottom: none;
+  padding: 12px 4px;
+  gap: 10px;
+  height: 100%;
+  justify-content: flex-start;
+}
+.lane.is-collapsed .lane-title {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  max-height: 100%;
+  flex: 0 1 auto;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.lane.is-collapsed .lane-count {
+  padding: 1px 5px;
+  order: -1;
+}
+.lane.is-collapsed .lane-cards { display: none; }
+
+/* ── JOB CARD (per wireframe) ── */
+.job-card {
+  display: flex;
+  align-items: stretch;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: box-shadow 0.15s, transform 0.15s;
+  flex-shrink: 0;   /* never compress — the lane scrolls instead */
+}
+.job-card:hover {
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+.card-body {
+  flex: 1;
+  padding: 12px 14px;
+  min-width: 0;
+}
+.card-job {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+.card-desc {
+  font-size: 13px;
+  color: var(--text-primary);
+  margin-top: 1px;
+  line-height: 1.35;
+}
+.card-customer {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 18px;
+  line-height: 1.3;
+}
+.card-mgmt {
+  font-size: 10px;
+  font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-tertiary);
-  text-align: left;
-  height: 44px;
-  vertical-align: middle;
+  margin-top: 2px;
+  line-height: 1.3;
 }
-.jobs-table th.col-job { padding-left: 16px; }
-.jobs-table th.th-date { text-align: right; }
 
-.jobs-table tbody tr { border-bottom: 1px solid var(--border-subtle); cursor: pointer; transition: background 0.12s; }
-.jobs-table tbody tr:last-child { border-bottom: none; }
-.jobs-table tbody tr:hover { background: var(--bg-muted); }
-.jobs-table tbody tr.row-hidden { display: none; }
-
-.jobs-table td { padding: 12px 16px; vertical-align: middle; font-size: 13px; color: var(--text-primary); }
-.jobs-table td.td-job { font-weight: 600; }
-.jobs-table td.td-date { text-align: right; color: var(--text-tertiary); font-size: 12px; }
-.jobs-table td.td-desc { color: var(--text-secondary); }
-
-.search-list-header {
-  border-radius: 8px 8px 0px 0px;
-  padding: 16px;
-  flex-direction: column;
-  gap: 12px;
+/* Colored stripe down the right edge — production type */
+.card-stripe {
+  flex: 0 0 16px;
+  background: var(--stripe-fill, var(--color-titanium-600));
 }
-.search-list-header input { width: 100%; }
 
-/* ── EMPTY STATE ── */
-.jobs-empty { padding: 48px 32px; text-align: center; color: var(--text-tertiary); font-size: 13px; }
+/* ── EMPTY BOARD STATE ── */
+.board-empty {
+  padding: 48px 32px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  width: 100%;
+}
 
-a.btn-secondary { text-decoration: none; }
+/* Scrollbars — slightly heavier than the app default, since the board
+   scrolls horizontally and needs the affordance. */
+.kanban::-webkit-scrollbar { height: 10px; }
+.kanban::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 5px;
+}
+
+/* ── PRESS PROOF STRIPE ──
+   Seventh production type, for the page layout allocation queue. */
+.prod-pressproof { --stripe-fill: var(--datacolor-cherry-01); --stripe-line: var(--datacolor-cherry-04); }
+.legend-swatch.prod-pressproof {
+  background: var(--stripe-fill);
+  border-color: var(--stripe-line);
+}
+
+/* ── CARD SCAN-LOCATION PILL ──
+   Shown wherever a lane holds more than one scan location: the sales board
+   (lanes are departments) and Creative's combined Working / Proof Out lanes. */
+.card-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 10px;
+}
+.card-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: var(--border-radius-full);
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-tertiary);
+  color: var(--text-secondary);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── SEGMENTED VIEW TOGGLE (allocation board) ── */
+.view-toggle {
+  display: inline-flex;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--border-radius-full);
+  overflow: hidden;
+  background: var(--bg-surface);
+}
+.view-toggle button {
+  border: none;
+  background: none;
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.view-toggle button + button { border-left: 1.5px solid var(--border-subtle); }
+.view-toggle button:hover:not(.active) { background: var(--bg-muted); }
+.view-toggle button.active {
+  background: var(--interactive-default);
+  color: var(--color-white);
+}
+
+/* ── ALLOCATION LANE ──
+   The allocation queue is the source column you drag out of, so it stays
+   pinned to the left edge while the designer inboxes scroll past it. The
+   accent background doubles as the opaque backdrop sticky positioning needs. */
+.lane.is-allocation {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: var(--accent-bg);
+  border-color: var(--accent-default);
+  box-shadow: 6px 0 12px -4px rgb(from var(--color-black) r g b / 0.13);
+}
+.lane.is-allocation .lane-title { color: var(--accent-strong); }
+
+/* Cards inside the pinned lane need their own opaque fill — the lane's
+   background sits behind them, and anything scrolling underneath would
+   otherwise show through the card's transparent areas. */
+.lane.is-allocation .lane-cards { background: var(--accent-bg); }

@@ -34,49 +34,20 @@
         <label for="dept-select">Department</label>
         <select id="dept-select" onchange="onDeptChange()"></select>
       </div>
-      <div class="dept-meta" id="dept-meta"></div>
 
-      <!-- Toolbar -->
-      <div class="jobs-toolbar">
-        <div class="toolbar-actions">
-          <div class="pill-filter-row" id="pill-row"></div>
+      <div class="board-toolbar">
+        <div class="search-container">
+          <i class="fa-regular fa-magnifying-glass"></i>
+          <input type="text" id="search-input" class="search-input" placeholder="Search department jobs..." autocomplete="off" />
         </div>
         <div class="toolbar-right">
-          <button class="pill-filter-clear" id="toggle-empty" onclick="toggleEmptyStops()"></button>
-          <button class="pill-filter-clear" id="clear-pills" onclick="clearPillFilter()" style="display:none">Clear filters</button>
+          <button class="text-btn" id="toggle-empty" onclick="toggleAllEmpty()"></button>
         </div>
       </div>
+      <div class="legend" id="legend"></div>
 
-      <!-- Table -->
-      <div class="card" style="display:block;">
-        <div class="search-list-header">
-          <input id="search-input" placeholder="Search department jobs..." />
-        </div>
-        <table class="jobs-table">
-          <colgroup>
-            <col class="col-job">
-            <col class="col-desc">
-            <col class="col-client">
-            <col class="col-loc">
-            <col class="col-prod">
-            <col class="col-type">
-            <col class="col-date">
-          </colgroup>
-          <thead>
-            <tr>
-              <th class="col-job">Job #</th>
-              <th class="col-desc">Description</th>
-              <th class="col-client">Client</th>
-              <th class="col-loc">Scan Location</th>
-              <th class="col-prod">Production Type</th>
-              <th class="col-type">Job Type</th>
-              <th class="th-date">Created</th>
-            </tr>
-          </thead>
-          <tbody id="jobs-tbody"></tbody>
-        </table>
-        <div class="jobs-empty" id="jobs-empty" style="display:none">No jobs match the current filters.</div>
-      </div>
+      <!-- ── BOARD ── -->
+      <div class="kanban" id="kanban"></div>
 
     </div><!-- /page-content -->
   </div><!-- /main -->
@@ -86,120 +57,147 @@
   <script src="mock-data.js"></script>
   <script>
     let currentDept = null;
-    let activePillDescs = new Set();
-    let showEmptyStops = false;
+    const expandedLanes = new Set();
+    let allEmptyExpanded = false;
 
     function initDeptSelect() {
       const sel = document.getElementById('dept-select');
       sel.innerHTML = DEPARTMENTS.map(d => `<option value="${d.desc}">${d.desc}</option>`).join('');
       currentDept = DEPARTMENTS[0];
+      document.getElementById('legend').innerHTML = legendHTML();
       render();
     }
 
     function onDeptChange() {
-      const desc = document.getElementById('dept-select').value;
-      currentDept = DEPARTMENTS.find(d => d.desc === desc);
-      activePillDescs = new Set();
-      showEmptyStops = false;
+      currentDept = DEPARTMENTS.find(d => d.desc === document.getElementById('dept-select').value);
+      expandedLanes.clear();
+      allEmptyExpanded = false;
       render();
     }
 
-    function togglePill(desc) {
-      if (activePillDescs.has(desc)) activePillDescs.delete(desc);
-      else activePillDescs.add(desc);
-      renderTable();
-      renderPills();
+    function toggleLane(key) {
+      if (expandedLanes.has(key)) expandedLanes.delete(key);
+      else expandedLanes.add(key);
+      renderBoard();
     }
 
-    function clearPillFilter() {
-      activePillDescs = new Set();
-      renderTable();
-      renderPills();
+    // Bulk expand/collapse for the empty stops. Bindery has 40 locations and
+    // Creative 46, most of them empty at any given moment, so the default is
+    // collapsed and this opens them all at once when someone needs to scan.
+    function toggleAllEmpty() {
+      allEmptyExpanded = !allEmptyExpanded;
+      const keys = buildLanes(deptJobs()).map(l => l.key);
+      expandedLanes.clear();
+      if (allEmptyExpanded) keys.forEach(k => expandedLanes.add(k));
+      renderBoard();
     }
 
-    // Departments like Creative Services and Bindery have 40+ scan locations,
-    // most of them empty at any given moment. Empty stops collapse behind a
-    // toggle so the pill row stays scannable.
-    function toggleEmptyStops() {
-      showEmptyStops = !showEmptyStops;
-      renderPills();
+    function deptJobs() {
+      const q = (document.getElementById('search-input').value || '').toLowerCase().trim();
+      return JOBS.filter(j => j.dept === currentDept.desc && (
+        !q || j.desc.toLowerCase().includes(q) || String(j.job).includes(q) ||
+        j.customer.toLowerCase().includes(q) || j.mgmtGroup.toLowerCase().includes(q)
+      ));
     }
 
-    function rowPillClass(desc) {
-      if (/proof out/i.test(desc)) return 'row-pill is-proof-out';
-      if (/shipped|billed/i.test(desc)) return 'row-pill is-shipped';
-      return 'row-pill';
-    }
+    // Build the lane list for the current department.
+    //
+    // Most departments get one lane per scan location — including stops owned by
+    // a named individual, since a department lead needs to see those too.
+    //
+    // Creative Services is the exception. Its 46 stops are mostly individual
+    // designers and their proof-out queues, which made for a 40-lane board. So
+    // it shows only the shared stops as lanes, then rolls every designer stop
+    // into one combined Working lane and one combined Proof Out lane, with the
+    // actual scan location on each card as a pill.
+    //
+    // Press gets a smaller version of the same treatment: Mike, Barry, David
+    // and Kristen M's individual "-Plated" stops combine into one Plated lane.
+    //
+    // Pre-Press gets it too: its individual proof-out queues (Mix Master Mike,
+    // Money Mitch, Da Barons, DJ Skittles) combine into one Proof Out lane.
+    // In both cases the actual stop is shown as a pill on each card.
+    //
+    // matchFn decides which of the department's locations get folded into the
+    // single combined lane (matchTitle); everything else keeps its own lane.
+    function combinedLanes(jobs, matchFn, matchKey, matchTitle) {
+      const byLoc = {};
+      jobs.forEach(j => { (byLoc[j.location] = byLoc[j.location] || []).push(j); });
 
-    function jobsForDept() {
-      return JOBS.filter(j => j.dept === currentDept.desc);
-    }
-
-    function renderPills() {
-      const jobs = jobsForDept();
-      const counts = {};
+      const lanes = [];
+      let combinedAdded = false;
       currentDept.locations.forEach(loc => {
-        counts[loc.desc] = jobs.filter(j => j.location === loc.desc).length;
+        if (matchFn(loc.desc)) {
+          if (!combinedAdded) {
+            lanes.push({
+              key: matchKey, title: matchTitle,
+              jobs: jobs.filter(j => matchFn(j.location)),
+              opts: { showLocation: true },
+            });
+            combinedAdded = true;
+          }
+          return;
+        }
+        lanes.push({ key: loc.desc, title: loc.desc, jobs: byLoc[loc.desc] || [], opts: {} });
       });
+      return lanes;
+    }
 
-      const emptyCount = currentDept.locations.filter(loc => !counts[loc.desc]).length;
-      const visible = currentDept.locations.filter(loc =>
-        showEmptyStops || counts[loc.desc] || activePillDescs.has(loc.desc)
-      );
+    function buildLanes(jobs) {
+      const byLoc = {};
+      jobs.forEach(j => { (byLoc[j.location] = byLoc[j.location] || []).push(j); });
 
-      const row = document.getElementById('pill-row');
-      row.innerHTML = visible.map(loc => {
-        const active = activePillDescs.has(loc.desc) ? ' active' : '';
-        const empty = counts[loc.desc] ? '' : ' is-empty';
-        return `<button class="pill-filter${active}${empty}" onclick="togglePill('${loc.desc.replace(/'/g, "\\'")}')">${loc.desc}<span class="pill-count">${counts[loc.desc]}</span></button>`;
-      }).join('');
+      if (currentDept.desc === CREATIVE_DEPT) {
+        const lanes = CREATIVE_SHARED_STOPS
+          .filter(desc => currentDept.locations.some(l => l.desc === desc))
+          .map(desc => ({ key: desc, title: desc, jobs: byLoc[desc] || [], opts: {} }));
 
-      const toggle = document.getElementById('toggle-empty');
-      if (emptyCount === 0) {
-        toggle.style.display = 'none';
-      } else {
-        toggle.style.display = '';
-        toggle.textContent = showEmptyStops
-          ? 'Hide ' + emptyCount + ' empty stops'
-          : 'Show ' + emptyCount + ' empty stops';
+        const rolled = proofOut => jobs.filter(j =>
+          !isCreativeSharedStop(j.location) && isProofOutStop(j.location) === proofOut
+        );
+
+        lanes.push({ key: '__working__',  title: 'Working',   jobs: rolled(false), opts: { showLocation: true } });
+        lanes.push({ key: '__proofout__', title: 'Proof Out', jobs: rolled(true),  opts: { showLocation: true } });
+        return lanes;
       }
 
-      document.getElementById('clear-pills').style.display = activePillDescs.size ? '' : 'none';
+      if (currentDept.desc === PRESS_DEPT) {
+        return combinedLanes(jobs, isPressPlatedStop, '__plated__', 'Plated');
+      }
+
+      if (currentDept.desc === PRE_PRESS_DEPT) {
+        return combinedLanes(jobs, isProofOutStop, '__proofout__', 'Proof Out');
+      }
+
+      return currentDept.locations.map(loc => ({
+        key: loc.desc, title: loc.desc, jobs: byLoc[loc.desc] || [], opts: {},
+      }));
     }
 
-    function renderTable() {
-      const q = (document.getElementById('search-input').value || '').toLowerCase().trim();
-      const tbody = document.getElementById('jobs-tbody');
-      const jobs = jobsForDept().filter(j => {
-        const pillMatch = activePillDescs.size === 0 || activePillDescs.has(j.location);
-        const searchMatch = !q || j.desc.toLowerCase().includes(q) || String(j.job).includes(q) || j.client.toLowerCase().includes(q);
-        return pillMatch && searchMatch;
-      });
+    function renderBoard() {
+      const lanes = buildLanes(deptJobs());
 
-      tbody.innerHTML = jobs.map(j => `
-        <tr onclick="goToJob(${j.job})">
-          <td class="td-job">${j.job}</td>
-          <td class="td-desc">${j.desc}</td>
-          <td>${j.client}</td>
-          <td><span class="${rowPillClass(j.location)}">${j.location}</span></td>
-          <td>${j.prodType}</td>
-          <td>${j.jobType}</td>
-          <td class="td-date">${j.date}</td>
-        </tr>
-      `).join('');
+      document.getElementById('kanban').innerHTML = lanes.map(l =>
+        laneHTML(l.key, l.title, l.jobs, expandedLanes, l.opts)
+      ).join('');
 
-      document.getElementById('jobs-empty').style.display = jobs.length === 0 ? '' : 'none';
+      const emptyCount = lanes.filter(l => !l.jobs.length).length;
+      const btn = document.getElementById('toggle-empty');
+      if (!emptyCount) {
+        btn.style.display = 'none';
+      } else {
+        btn.style.display = '';
+        btn.textContent = allEmptyExpanded
+          ? 'Collapse ' + emptyCount + ' empty stops'
+          : 'Expand ' + emptyCount + ' empty stops';
+      }
     }
 
     function render() {
-      document.getElementById('dept-meta').textContent = 'One shared board for the whole department — every scan location under ' + currentDept.desc + ' is a filter pill.';
-      renderPills();
-      renderTable();
+      renderBoard();
     }
 
-    function goToJob(jobNum) {
-      showToast('Opening job #' + jobNum + '…');
-    }
+    function goToJob(jobNum) { showToast('Opening job #' + jobNum + '…'); }
 
     function showToast(msg) {
       const t = document.getElementById('toast');
@@ -208,8 +206,7 @@
       setTimeout(() => t.classList.remove('show'), 2200);
     }
 
-    document.getElementById('search-input').addEventListener('input', renderTable);
-
+    document.getElementById('search-input').addEventListener('input', renderBoard);
     initDeptSelect();
   </script>
 </body>

@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Allocation — Active Jobs Dashboards</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="shared/css/design-tokens.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=optional"
+    rel="stylesheet">
+  <link rel="stylesheet" href="customer-management.css" />
+  <link rel="stylesheet" href="jobs-dashboard.css" />
+</head>
+
+<body data-theme="titanium">
+  <div class="main">
+
+    <!-- ── TOP BAR ── -->
+    <div class="topbar">
+      <div class="breadcrumb type-body-sm">
+        <a href="index.html"><i class="fa-regular fa-folder"></i> Jobs Dashboards</a>
+        <span class="sep">›</span>
+        <span class="current">Allocation</span>
+      </div>
+    </div>
+
+    <!-- ── PAGE CONTENT ── -->
+    <div class="page-content">
+
+      <div class="viewing-as">
+        <label>Allocating</label>
+        <div class="view-toggle" id="view-toggle"></div>
+      </div>
+
+      <div class="board-toolbar">
+        <div class="search-container">
+          <i class="fa-regular fa-magnifying-glass"></i>
+          <input type="text" id="search-input" class="search-input" placeholder="Search jobs to allocate..." autocomplete="off" />
+        </div>
+        <div class="toolbar-right">
+          <button class="text-btn" id="toggle-empty" onclick="toggleAllEmpty()"></button>
+        </div>
+      </div>
+      <div class="legend" id="legend"></div>
+
+      <!-- ── BOARD ── -->
+      <div class="kanban" id="kanban"></div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main -->
+
+  <div class="toast" id="toast"></div>
+
+  <script src="mock-data.js"></script>
+  <script>
+    let currentView = ALLOCATION_VIEWS[0];
+    const expandedLanes = new Set();
+    let allEmptyExpanded = false;
+
+    function initToggle() {
+      document.getElementById('view-toggle').innerHTML = ALLOCATION_VIEWS.map(v =>
+        `<button class="${v.key === currentView.key ? 'active' : ''}" onclick="setView('${v.key}')">${v.label}</button>`
+      ).join('');
+    }
+
+    function setView(key) {
+      currentView = ALLOCATION_VIEWS.find(v => v.key === key);
+      expandedLanes.clear();
+      allEmptyExpanded = false;
+      render();
+    }
+
+    function toggleLane(key) {
+      if (expandedLanes.has(key)) expandedLanes.delete(key);
+      else expandedLanes.add(key);
+      renderBoard();
+    }
+
+    function toggleAllEmpty() {
+      allEmptyExpanded = !allEmptyExpanded;
+      const keys = buildLanes(viewJobs()).map(l => l.key);
+      expandedLanes.clear();
+      if (allEmptyExpanded) keys.forEach(k => expandedLanes.add(k));
+      renderBoard();
+    }
+
+    // Only jobs whose production type belongs to the selected allocator.
+    function viewJobs() {
+      const q = (document.getElementById('search-input').value || '').toLowerCase().trim();
+      return JOBS.filter(j =>
+        currentView.prodTypes.indexOf(j.prodType) !== -1 && (
+          !q || j.desc.toLowerCase().includes(q) || String(j.job).includes(q) ||
+          j.customer.toLowerCase().includes(q) || j.mgmtGroup.toLowerCase().includes(q)
+        )
+      );
+    }
+
+    // First lane is the allocation queue itself — work that hasn't been handed
+    // to a designer yet. Then one inbox lane per designer.
+    function buildLanes(jobs) {
+      const lanes = [{
+        key: currentView.allocationStop,
+        title: currentView.allocationStop,
+        jobs: jobs.filter(j => j.location === currentView.allocationStop),
+        opts: { laneClass: 'is-allocation' },
+      }];
+
+      DESIGNERS.forEach(d => {
+        const stop = d.locations[0].desc;   // the designer's own working stop
+        lanes.push({
+          key: stop,
+          title: d.name + ' - Inbox',
+          jobs: jobs.filter(j => j.location === stop),
+          opts: {},
+        });
+      });
+
+      return lanes;
+    }
+
+    function renderBoard() {
+      const lanes = buildLanes(viewJobs());
+
+      document.getElementById('kanban').innerHTML = lanes.map(l =>
+        laneHTML(l.key, l.title, l.jobs, expandedLanes, l.opts)
+      ).join('');
+
+      const emptyCount = lanes.filter(l => !l.jobs.length).length;
+      const btn = document.getElementById('toggle-empty');
+      if (!emptyCount) {
+        btn.style.display = 'none';
+      } else {
+        btn.style.display = '';
+        btn.textContent = allEmptyExpanded
+          ? 'Collapse ' + emptyCount + ' empty inboxes'
+          : 'Expand ' + emptyCount + ' empty inboxes';
+      }
+    }
+
+    function render() {
+      initToggle();
+      // Legend is scoped to the production types this allocator handles.
+      document.getElementById('legend').innerHTML = legendHTML(currentView.prodTypes);
+      renderBoard();
+    }
+
+    function goToJob(jobNum) { showToast('Opening job #' + jobNum + '…'); }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = '→  ' + msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    document.getElementById('search-input').addEventListener('input', renderBoard);
+    render();
+  </script>
+</body>
+
+</html>

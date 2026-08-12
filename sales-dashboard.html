@@ -34,52 +34,17 @@
         <label for="rep-select">Viewing as</label>
         <select id="rep-select" onchange="onRepChange()"></select>
       </div>
-      <div class="dept-meta" id="rep-meta"></div>
 
-      <!-- Toolbar -->
-      <div class="jobs-toolbar">
-        <div class="toolbar-actions">
-          <div class="pill-filter-row" id="pill-row"></div>
+      <div class="board-toolbar">
+        <div class="search-container">
+          <i class="fa-regular fa-magnifying-glass"></i>
+          <input type="text" id="search-input" class="search-input" placeholder="Search my clients' jobs..." autocomplete="off" />
         </div>
-        <button class="pill-filter-clear" id="clear-pills" onclick="clearPillFilter()" style="display:none">Clear filters</button>
       </div>
+      <div class="legend" id="legend"></div>
 
-      <!-- Client sub-filter -->
-      <div class="sub-filter">
-        <label for="client-select">Client</label>
-        <select id="client-select" onchange="renderAll()"></select>
-      </div>
-
-      <!-- Table -->
-      <div class="card" style="display:block;">
-        <div class="search-list-header">
-          <input id="search-input" placeholder="Search my clients' jobs..." />
-        </div>
-        <table class="jobs-table">
-          <colgroup>
-            <col class="col-job">
-            <col class="col-desc">
-            <col class="col-client">
-            <col class="col-dept">
-            <col class="col-loc">
-            <col class="col-prod">
-            <col class="col-date">
-          </colgroup>
-          <thead>
-            <tr>
-              <th class="col-job">Job #</th>
-              <th class="col-desc">Description</th>
-              <th class="col-client">Client</th>
-              <th class="col-dept">Department</th>
-              <th class="col-loc">Scan Location</th>
-              <th class="col-prod">Production Type</th>
-              <th class="th-date">Created</th>
-            </tr>
-          </thead>
-          <tbody id="jobs-tbody"></tbody>
-        </table>
-        <div class="jobs-empty" id="jobs-empty" style="display:none">No jobs match the current filters.</div>
-      </div>
+      <!-- ── BOARD ── -->
+      <div class="kanban" id="kanban"></div>
 
     </div><!-- /page-content -->
   </div><!-- /main -->
@@ -89,121 +54,61 @@
   <script src="mock-data.js"></script>
   <script>
     let currentRep = null;
-    let activeDepts = new Set();   // dept labels, e.g. 'Bindery' / 'Unassigned'
+    const expandedLanes = new Set();
 
     function initRepSelect() {
       const sel = document.getElementById('rep-select');
       sel.innerHTML = SALES_REPS.map(r => `<option value="${r.name}">${r.name}</option>`).join('');
       currentRep = SALES_REPS[0];
+      document.getElementById('legend').innerHTML = legendHTML();
       render();
     }
 
     function onRepChange() {
-      const name = document.getElementById('rep-select').value;
-      currentRep = SALES_REPS.find(r => r.name === name);
-      activeDepts = new Set();
+      currentRep = SALES_REPS.find(r => r.name === document.getElementById('rep-select').value);
+      expandedLanes.clear();
       render();
     }
 
-    // Filter pills are the DEPARTMENT each job's current scan location belongs
-    // to — so a rep can see, at a glance, how much of their book is sitting in
-    // Creative vs Bindery vs Shipping. Client is a separate dropdown below.
-    function toggleDept(label) {
-      if (activeDepts.has(label)) activeDepts.delete(label);
-      else activeDepts.add(label);
-      renderAll();
+    function toggleLane(key) {
+      if (expandedLanes.has(key)) expandedLanes.delete(key);
+      else expandedLanes.add(key);
+      renderBoard();
     }
 
-    function clearPillFilter() {
-      activeDepts = new Set();
-      renderAll();
+    // Lanes are the DEPARTMENT each job's current scan location belongs to, so
+    // a rep can see how much of their book is in art vs. on the floor vs.
+    // ready to ship. Ordered by the shop's own department numbering, with
+    // department-less stops last.
+    function laneOrder() {
+      return Object.keys(DEPT_SHORT_NAME).map(d => DEPT_SHORT_NAME[d]).concat([UNASSIGNED_DEPT]);
     }
 
-    function rowPillClass(desc) {
-      if (/proof out/i.test(desc)) return 'row-pill is-proof-out';
-      if (/shipped|billed/i.test(desc)) return 'row-pill is-shipped';
-      return 'row-pill';
-    }
-
-    function jobsForRep() {
-      return JOBS.filter(j => j.rep === currentRep.name);
-    }
-
-    // Rep's jobs after the client dropdown, before the dept pills — so the
-    // pill counts reflect the selected client.
-    function jobsInScope() {
-      const client = document.getElementById('client-select').value;
-      return jobsForRep().filter(j => !client || j.client === client);
-    }
-
-    function initClientSelect() {
-      const sel = document.getElementById('client-select');
-      sel.innerHTML = '<option value="">All my clients</option>' +
-        currentRep.clients.map(c => `<option value="${c}">${c}</option>`).join('');
-    }
-
-    function renderPills() {
-      const jobs = jobsInScope();
-      // Pills follow the shop's own department numbering (the key order of
-      // DEPT_SHORT_NAME), with department-less stops last. Departments the rep
-      // has no jobs in are omitted rather than shown at zero.
-      const labels = [];
-      const counts = {};
-      jobs.forEach(j => {
-        counts[j.deptLabel] = (counts[j.deptLabel] || 0) + 1;
-      });
-      Object.keys(DEPT_SHORT_NAME).forEach(d => {
-        const label = DEPT_SHORT_NAME[d];
-        if (counts[label]) labels.push(label);
-      });
-      if (counts[UNASSIGNED_DEPT]) labels.push(UNASSIGNED_DEPT);
-
-      const row = document.getElementById('pill-row');
-      row.innerHTML = labels.map(label => {
-        const active = activeDepts.has(label) ? ' active' : '';
-        return `<button class="pill-filter${active}" onclick="toggleDept('${label.replace(/'/g, "\\'")}')">${label}<span class="pill-count">${counts[label]}</span></button>`;
-      }).join('');
-      document.getElementById('clear-pills').style.display = activeDepts.size ? '' : 'none';
-    }
-
-    function renderTable() {
+    function renderBoard() {
       const q = (document.getElementById('search-input').value || '').toLowerCase().trim();
-      const tbody = document.getElementById('jobs-tbody');
-      const jobs = jobsInScope().filter(j => {
-        const deptMatch = activeDepts.size === 0 || activeDepts.has(j.deptLabel);
-        const searchMatch = !q || j.desc.toLowerCase().includes(q) || String(j.job).includes(q) || j.client.toLowerCase().includes(q);
-        return deptMatch && searchMatch;
-      });
+      const mine = JOBS.filter(j => j.rep === currentRep.name && (
+        !q || j.desc.toLowerCase().includes(q) || String(j.job).includes(q) ||
+        j.customer.toLowerCase().includes(q) || j.mgmtGroup.toLowerCase().includes(q)
+      ));
 
-      tbody.innerHTML = jobs.map(j => `
-        <tr onclick="goToJob(${j.job})">
-          <td class="td-job">${j.job}</td>
-          <td class="td-desc">${j.desc}</td>
-          <td>${j.client}</td>
-          <td>${j.deptLabel}</td>
-          <td><span class="${rowPillClass(j.location)}">${j.location}</span></td>
-          <td>${j.prodType}</td>
-          <td class="td-date">${j.date}</td>
-        </tr>
-      `).join('');
+      const byDept = {};
+      mine.forEach(j => { (byDept[j.deptLabel] = byDept[j.deptLabel] || []).push(j); });
 
-      document.getElementById('jobs-empty').style.display = jobs.length === 0 ? '' : 'none';
-    }
+      // Only show departments this rep actually has work in — a sales rep
+      // doesn't need an empty Office lane on their board.
+      const lanes = laneOrder().filter(label => byDept[label] || expandedLanes.has(label));
 
-    function renderAll() {
-      renderPills();
-      renderTable();
+      document.getElementById('kanban').innerHTML = lanes.length
+        // Lanes are departments, so each card carries its actual scan location.
+        ? lanes.map(label => laneHTML(label, label, byDept[label] || [], expandedLanes, { showLocation: true })).join('')
+        : '<div class="board-empty">No active jobs match this search.</div>';
     }
 
     function render() {
-      document.getElementById('rep-meta').textContent = 'Every active job across the client accounts attached to ' + currentRep.name + '. Pills filter by the department the job is currently sitting in.';
-      initClientSelect();
-      renderAll();
+      renderBoard();
     }
 
-    function goToJob(jobNum) {
-      showToast('Opening job #' + jobNum + '…');
-    }
+    function goToJob(jobNum) { showToast('Opening job #' + jobNum + '…'); }
 
     function showToast(msg) {
       const t = document.getElementById('toast');
@@ -212,8 +117,7 @@
       setTimeout(() => t.classList.remove('show'), 2200);
     }
 
-    document.getElementById('search-input').addEventListener('input', renderTable);
-
+    document.getElementById('search-input').addEventListener('input', renderBoard);
     initRepSelect();
   </script>
 </body>
