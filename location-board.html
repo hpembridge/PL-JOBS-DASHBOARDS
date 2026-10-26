@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Location Board — Jobs Dashboards</title>
+  <script src="https://kit.fontawesome.com/da08280601.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="shared/css/design-tokens.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=optional"
+    rel="stylesheet">
+  <!-- Job card + production-type stripe come from the existing dashboards -->
+  <link rel="stylesheet" href="jobs-dashboard.css" />
+  <!-- Shared breadcrumbs — copied from Inventory Quantity Upgrade / Rollout Manager -->
+  <link rel="stylesheet" href="components/breadcrumbs/breadcrumbs.css" />
+  <link rel="stylesheet" href="location-board.css" />
+  <script>
+    window.SIDEBAR_CONFIG = {
+      activeItem: 'Dashboard',
+      user: { name: 'Healey Pembridge', role: 'digital process engineer' }
+    };
+  </script>
+</head>
+
+<body data-theme="titanium">
+  <script src="shared/components/sidebar-component.js"></script>
+
+  <div class="main-content">
+
+    <!-- ══ BREADCRUMB BAR ══ -->
+    <div class="breadcrumb-bar">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a class="crumb" href="index.html"><i class="fa-regular fa-folder"></i> Jobs Dashboards</a>
+        <i class="fa-regular fa-chevron-right crumb-sep" aria-hidden="true"></i>
+        <span class="crumb current">Location Board</span>
+      </nav>
+    </div>
+    <!-- ══ /BREADCRUMB BAR ══ -->
+
+    <div class="board-page">
+
+      <!-- ══ VIEW TABS ══
+           One tab per saved view this person keeps. A view is just a name
+           and an ordered list of locations. The X removes the view (undo
+           in the toast); the + starts a new one. Same folder-tab component
+           as the inventory library tabs. ══ -->
+      <div class="view-tabs" id="viewTabs" role="tablist" aria-label="Saved views">
+        <!-- tabs are inserted before this button -->
+        <button type="button" class="view-tab view-tab--add" id="btnNewView"
+          title="Create a new view" aria-label="Create a new view">
+          <i class="fa-regular fa-plus"></i>
+        </button>
+      </div>
+      <!-- ══ /VIEW TABS ══ -->
+
+      <!-- ══ VIEW PANEL ══
+           Welds onto the active tab so the two read as one folder. ══ -->
+      <section class="view-panel" id="viewPanel" role="tabpanel">
+
+        <!-- ── View toolbar ── -->
+        <div class="view-toolbar">
+          <!-- View name + edit, same pairing as the inventory library title -->
+          <div class="view-toolbar__name">
+            <h5 class="view-toolbar__title" id="viewTitle">View</h5>
+            <button type="button" class="icon-btn" id="btnEditView"
+              title="Edit view" aria-label="Edit view">
+              <i class="fa-regular fa-pen"></i>
+            </button>
+          </div>
+
+          <div class="search-field">
+            <i class="fa-regular fa-magnifying-glass search-field__icon"></i>
+            <input type="search" id="boardSearch" class="search-field__input"
+              placeholder="Search job, customer, description" autocomplete="off"
+              aria-label="Search jobs on this view" />
+          </div>
+
+        </div>
+        <!-- ── /View toolbar ── -->
+
+        <!-- ── Board ──
+             Columns are the view's locations, in view order. Locked
+             columns (HideLocationFromScannerFlg = 1) show their jobs but
+             can't be dragged into or out of. ── -->
+        <div class="loc-board" id="board"></div>
+
+        <!-- Empty view — shown instead of the board when a view has no columns -->
+        <div class="board-empty-state" id="boardEmpty" hidden>
+          <i class="fa-regular fa-table-columns board-empty-state__icon"></i>
+          <p class="board-empty-state__title">No columns in this view yet</p>
+          <p class="board-empty-state__text">Pick the locations you want to watch. You can change them any time.</p>
+          <button type="button" class="btn-primary" id="btnEmptyAddColumns">
+            <i class="fa-regular fa-plus"></i> Add columns
+          </button>
+        </div>
+
+      </section>
+      <!-- ══ /VIEW PANEL ══ -->
+
+    </div><!-- /board-page -->
+  </div><!-- /main-content -->
+
+
+  <!-- ══ JOB ASIDE ══
+       Opens when a card is clicked. Summary (breadcrumbs incl. job page link, status chips) on top,
+       then two tabs: Job details (general notes + detail cards) and
+       Activity (log time form + one timeline of scans and time). ══ -->
+  <div class="flyout-overlay" id="jobAside">
+    <div class="flyout-panel" role="dialog" aria-modal="true" aria-labelledby="jobAsideTitle">
+
+      <div class="flyout-header">
+        <!-- Job number + description, same title row as the job detail page -->
+        <h2 class="flyout-title job-title-row" id="jobAsideTitle">
+          <span class="job-title-row__number" data-job="number"></span>
+          <span class="job-title-row__name" data-job="description"></span>
+        </h2>
+        <button type="button" class="icon-btn" data-close aria-label="Close">
+          <i class="fa-regular fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="flyout-body">
+
+        <!-- ── Job summary ── -->
+        <section class="job-summary">
+          <!-- Management group › customer › job — shared breadcrumbs
+               component (components/breadcrumbs). Every crumb links to its
+               record; hrefs point at the PL-CM-1.5 / PL-8.0 prototype pages.
+               The job crumb is a chip (.crumb--chip), same treatment as the
+               "where" link in the notifications prototype. ── -->
+          <nav class="breadcrumbs job-summary__crumbs" aria-label="Customer">
+            <a class="crumb" id="crumbMgmtGroup" href="#">
+              <i class="fa-regular fa-users"></i>
+              <span data-job="mgmtGroup"></span>
+            </a>
+            <i class="fa-regular fa-chevron-right crumb-sep" aria-hidden="true"></i>
+            <a class="crumb" id="crumbCustomer" href="#">
+              <i class="fa-regular fa-user"></i>
+              <span>(<span data-job="customerNumber"></span>) <span data-job="customer"></span></span>
+            </a>
+            <i class="fa-regular fa-chevron-right crumb-sep" aria-hidden="true"></i>
+            <a class="crumb crumb--chip" id="linkJobPage" href="#">
+              <span data-job="number"></span>
+              <span class="crumb--chip__desc" data-job="description"></span>
+              <i class="fa-regular fa-arrow-up-right" aria-hidden="true"></i>
+            </a>
+          </nav>
+
+          <div class="job-summary__footer">
+            <div class="job-summary__chips">
+              <!-- Current status (location) -->
+              <span class="meta-chip" data-job="locationChip">
+                <i class="fa-regular fa-location-dot"></i>
+                <span data-job="location"></span>
+                <i class="fa-regular fa-lock meta-chip__lock" data-job="locationLock" title="Locked location" hidden></i>
+              </span>
+              <!-- Job type -->
+              <span class="meta-chip">
+                <span data-job="jobType"></span>
+              </span>
+              <!-- Production type — dot takes the card's stripe colour -->
+              <span class="meta-chip">
+                <span class="prod-dot" data-job="prodDot" aria-hidden="true"></span>
+                <span data-job="prodType"></span>
+              </span>
+              <!-- Total time logged — updates when time is added -->
+              <span class="meta-chip">
+                <i class="fa-regular fa-clock"></i>
+                <span id="timeChip">0m total</span>
+              </span>
+            </div>
+          </div>
+        </section>
+        <!-- ── /Job summary ── -->
+
+        <!-- ── Aside tabs ──
+             Splits the aside into the job's details and its time. Uses the
+             shared .tab-btn from design-tokens.css. The last tab used stays
+             selected as you open other jobs. ── -->
+        <div class="aside-tabs" role="tablist" aria-label="Job sections">
+          <button type="button" class="tab-btn active" role="tab" id="tabDetails"
+            aria-selected="true" aria-controls="panelDetails" data-aside-tab="details">
+            Job details
+          </button>
+          <button type="button" class="tab-btn" role="tab" id="tabActivity"
+            aria-selected="false" aria-controls="panelActivity" data-aside-tab="activity" tabindex="-1">
+            Activity
+          </button>
+        </div>
+        <!-- ── /Aside tabs ── -->
+
+        <!-- ══ PANEL: JOB DETAILS ══ -->
+        <div class="aside-panel" role="tabpanel" id="panelDetails" aria-labelledby="tabDetails">
+
+            <!-- ── General notes widget ──
+                 Markup and classes from PL-JM-1.25 production tab
+                 (components/production-tab/production-tab.html). ── -->
+            <div class="widget">
+              <div class="widget-section">
+                <div class="widget-section-header">
+                  <span class="widget-section-label">General notes</span>
+                </div>
+
+                <div class="widget-notes" id="noteList"></div>
+                <p class="detail-empty-prompt" id="noteEmpty">
+                  <i class="fa-regular fa-circle-minus"></i> No general notes
+                </p>
+              </div>
+            </div>
+            <!-- ── /General notes widget ── -->
+
+            <!-- ── Detail cards ── (PL-JM-1.25 .detail-card) -->
+            <div class="detail-stack" id="detailList"></div>
+            <!-- ── /Detail cards ── -->
+
+        </div>
+        <!-- ══ /PANEL: JOB DETAILS ══ -->
+
+        <!-- ══ PANEL: ACTIVITY ══
+             One activity log for the job: location scans and time entries,
+             earliest first. Timeline styling is the Activity Log from
+             PL-JM-1.25 (modals/scan-history-modal); filter pills are the
+             notifications prototype's .notif-filter. ══ -->
+        <div class="aside-panel" role="tabpanel" id="panelActivity" aria-labelledby="tabActivity" hidden>
+
+            <section class="aside-section">
+
+              <!-- ── Log time form ──
+                   One line, keyboard-first: Hours → Minutes → Sent proof? →
+                   Task → Add. Sent proof? and Task are text inputs with a
+                   datalist, so people can type instead of reaching for the
+                   mouse. Only values in the list are accepted — an exact match
+                   or an unambiguous start ("y" → Yes, "typ" → Typesetting) is
+                   filled in on blur; anything else is refused. Enter anywhere
+                   (or Tab to Add, then Enter) logs the entry. ── -->
+              <form class="time-form" id="timeForm" novalidate>
+                <label class="visually-hidden" for="timeHours">Hours</label>
+                <input type="number" class="input time-form__num" id="timeHours"
+                  min="0" max="24" step="1" inputmode="numeric" placeholder="Hours" />
+
+                <label class="visually-hidden" for="timeMinutes">Minutes</label>
+                <input type="number" class="input time-form__num" id="timeMinutes"
+                  min="0" max="59" step="1" inputmode="numeric" placeholder="Minutes" />
+
+                <label class="visually-hidden" for="timeProof">Sent proof?</label>
+                <input type="text" class="input time-form__proof" id="timeProof"
+                  list="proofOptions" autocomplete="off" placeholder="Sent proof?" />
+                <datalist id="proofOptions">
+                  <option value="Yes"></option>
+                  <option value="No"></option>
+                  <option value="Revised"></option>
+                </datalist>
+
+                <label class="visually-hidden" for="timeTask">Task</label>
+                <input type="text" class="input time-form__task" id="timeTask"
+                  list="taskOptions" autocomplete="off" placeholder="Task" />
+                <!-- Work types. data-worktype-id is what gets saved.
+                     In Angular: @for over the work-type list. -->
+                <datalist id="taskOptions">
+                  <option value="Backdoor/Autojobs" data-worktype-id="11"></option>
+                  <option value="Design" data-worktype-id="1"></option>
+                  <option value="Double Check" data-worktype-id="9"></option>
+                  <option value="Email" data-worktype-id="6"></option>
+                  <option value="Follow-Up" data-worktype-id="39"></option>
+                  <option value="Gerry" data-worktype-id="8"></option>
+                  <option value="In-House" data-worktype-id="37"></option>
+                  <option value="IT Support" data-worktype-id="4"></option>
+                  <option value="Logo" data-worktype-id="12"></option>
+                  <option value="Meeting" data-worktype-id="5"></option>
+                  <option value="Non-Bill" data-worktype-id="7"></option>
+                  <option value="Portfolio" data-worktype-id="10"></option>
+                  <option value="Preproduction" data-worktype-id="38"></option>
+                  <option value="Proofreading (non-bill)" data-worktype-id="40"></option>
+                  <option value="Social Media" data-worktype-id="14"></option>
+                  <option value="Typesetting" data-worktype-id="2"></option>
+                  <option value="WordPress" data-worktype-id="13"></option>
+                </datalist>
+
+                <button type="submit" class="btn-primary time-form__submit">Add</button>
+
+                <p class="time-form__error" id="timeError" role="alert" hidden></p>
+              </form>
+              <!-- ── /Log time form ── -->
+
+              <!-- ── Activity filters ── one pressed at a time -->
+              <div class="activity-filters" role="group" aria-label="Filter activity">
+                <button type="button" class="activity-filter" data-activity-filter="all" aria-pressed="true">
+                  All activity
+                </button>
+                <button type="button" class="activity-filter" data-activity-filter="scan" aria-pressed="false">
+                  Location scans
+                </button>
+                <button type="button" class="activity-filter" data-activity-filter="time" aria-pressed="false">
+                  Time entries
+                </button>
+                <button type="button" class="activity-filter" data-activity-filter="proof" aria-pressed="false">
+                  Proofs sent
+                </button>
+                <!-- Count for whatever is selected — updates with the filter -->
+                <span class="activity-filters__count" id="activityCount" aria-live="polite"></span>
+              </div>
+
+              <!-- ── Activity timeline ── (PL-JM-1.25 .activity-timeline) -->
+              <div class="activity-timeline">
+                <div class="timeline-scroll" id="activityList"></div>
+              </div>
+              <p class="aside-empty" id="activityEmpty" hidden></p>
+            </section>
+
+        </div>
+        <!-- ══ /PANEL: ACTIVITY ══ -->
+
+      </div><!-- /flyout-body -->
+    </div>
+  </div>
+  <!-- ══ /JOB ASIDE ══ -->
+
+
+  <!-- ══ COLUMNS ASIDE ══
+       Edits the active view: its name and which locations are columns.
+       Changes apply live, so the board updates behind the panel. ══ -->
+  <div class="flyout-overlay" id="columnsAside">
+    <div class="flyout-panel" role="dialog" aria-modal="true" aria-labelledby="columnsAsideTitle">
+
+      <div class="flyout-header">
+        <span class="flyout-title" id="columnsAsideTitle">Edit view</span>
+        <button type="button" class="icon-btn" data-close aria-label="Close">
+          <i class="fa-regular fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="flyout-body">
+
+        <div class="form-group">
+          <label class="field-label" for="viewNameInput">View name</label>
+          <input type="text" class="input" id="viewNameInput" autocomplete="off" />
+        </div>
+
+        <div class="picker">
+          <div class="picker__header">
+            <span class="field-label">Columns</span>
+            <span class="aside-section__meta"><span id="pickerShownCount">0</span> shown</span>
+          </div>
+
+          <div class="picker__controls">
+            <div class="search-field">
+              <i class="fa-regular fa-magnifying-glass search-field__icon"></i>
+              <input type="search" id="pickerSearch" class="search-field__input"
+                placeholder="Find a location" autocomplete="off" aria-label="Find a location" />
+            </div>
+            <!-- Segmented filter — .view-toggle from jobs-dashboard.css -->
+            <div class="view-toggle" role="group" aria-label="Filter locations">
+              <button type="button" class="active" data-picker-filter="all">All</button>
+              <button type="button" data-picker-filter="shown">Shown</button>
+            </div>
+          </div>
+
+          <p class="picker__hint">
+            <i class="fa-regular fa-lock"></i>
+            Locked columns show their jobs, but jobs can't be dragged into or out of them.
+          </p>
+
+          <div class="picker__list" id="pickerList"></div>
+          <p class="aside-empty" id="pickerNone" hidden>No locations match.</p>
+        </div>
+
+      </div><!-- /flyout-body -->
+
+      <div class="flyout-footer">
+        <button type="button" class="btn-ghost btn-ghost--danger" id="btnDeleteView">
+          <i class="fa-regular fa-trash-can"></i> Delete view
+        </button>
+        <button type="button" class="btn-primary" data-close>Done</button>
+      </div>
+
+    </div>
+  </div>
+  <!-- ══ /COLUMNS ASIDE ══ -->
+
+
+  <!-- ══ TOAST ══ -->
+  <div class="toast" id="toast" role="status" aria-live="polite">
+    <span class="toast__text" id="toastText"></span>
+    <button type="button" class="toast__action" id="toastAction" hidden>Undo</button>
+  </div>
+
+
+  <!-- ══ TEMPLATES ══
+       Real markup for every repeated block, cloned by location-board.js.
+       Each one becomes an @for block (or a child component) in Angular. ══ -->
+
+  <!-- One view tab -->
+  <template id="tpl-view-tab">
+    <button type="button" class="view-tab" role="tab" data-view-id="">
+      <span class="view-tab__name"></span>
+      <span class="view-tab__close" role="button" tabindex="0" data-remove-view aria-label="Remove view">
+        <i class="fa-regular fa-xmark"></i>
+      </span>
+    </button>
+  </template>
+
+  <!-- One board column (= one location) -->
+  <template id="tpl-column">
+    <div class="loc-column" data-location-id="">
+      <div class="loc-column__header">
+        <i class="fa-regular fa-lock loc-column__lock" title="Locked — jobs can't be moved in or out" hidden></i>
+        <span class="loc-column__title"></span>
+        <span class="loc-column__count"></span>
+      </div>
+      <div class="loc-column__cards"></div>
+      <!-- Only visible while a card is being dragged -->
+      <div class="loc-column__blocked">
+        <i class="fa-regular fa-lock"></i>
+        <span>Locked</span>
+      </div>
+    </div>
+  </template>
+
+  <!-- Empty column -->
+  <template id="tpl-column-empty">
+    <div class="loc-column__empty">No jobs</div>
+  </template>
+
+  <!-- One job card — same face as the other dashboards -->
+  <template id="tpl-job-card">
+    <div class="job-card" draggable="true" tabindex="0" role="button" data-job-number="">
+      <div class="card-body">
+        <div class="card-job"></div>
+        <div class="card-desc"></div>
+        <div class="card-customer"></div>
+        <div class="card-mgmt"></div>
+      </div>
+      <div class="card-stripe"></div>
+    </div>
+  </template>
+
+  <!-- One activity row — PL-JM-1.25 Activity Log timeline row.
+       data-kind is "scan" or "time"; it picks which icon shows in the dot.
+       Title: "Scanned to / Moved to <location>" or "<task> • <time> • <proof>".
+       Meta: who. -->
+  <template id="tpl-activity-row">
+    <div class="timeline-row" data-kind="">
+      <div class="timeline-date type-body-sm"></div>
+      <div class="timeline-connector">
+        <div class="timeline-line">
+          <div class="timeline-tick">
+            <i class="fa-solid fa-location-dot timeline-tick__icon timeline-tick__icon--scan" aria-hidden="true"></i>
+            <i class="fa-solid fa-clock timeline-tick__icon timeline-tick__icon--time" aria-hidden="true"></i>
+          </div>
+        </div>
+      </div>
+      <div class="timeline-event type-body-md">
+        <span class="timeline-event__main">
+          <span class="timeline-event__title"></span>
+          <span class="timeline-event__meta"></span>
+        </span>
+      </div>
+    </div>
+  </template>
+
+  <!-- One general note -->
+  <template id="tpl-note">
+    <div class="widget-note-item">
+      <span class="widget-note-num"></span>
+      <p class="widget-note-text"></p>
+    </div>
+  </template>
+
+  <!-- One job detail card — PL-JM-1.25 production tab markup, read-only
+       (no edit/remove actions or section pills in the aside) -->
+  <template id="tpl-detail-card">
+    <div class="detail-card">
+      <div class="detail-card-header">
+        <div class="detail-card-title">
+          <span class="detail-num"></span>
+          <span class="detail-card-name"></span>
+        </div>
+      </div>
+      <div class="detail-card-body">
+        <!-- sections inserted here -->
+        <div class="detail-card-notes" hidden></div>
+      </div>
+    </div>
+  </template>
+
+  <!-- One section inside a detail card -->
+  <template id="tpl-detail-section">
+    <div class="detail-section">
+      <div class="detail-fields">
+        <div class="detail-section-header">
+          <i class="fa-regular fa-circle-check detail-section-icon"></i>
+          <span class="detail-section-title"></span>
+        </div>
+        <div class="spec-tiles"></div>
+      </div>
+    </div>
+  </template>
+
+  <!-- One spec tile -->
+  <template id="tpl-spec-tile">
+    <div class="spec-tile">
+      <span class="spec-tile-label"></span>
+      <span class="spec-tile-value"></span>
+    </div>
+  </template>
+
+  <!-- Column picker: department group -->
+  <template id="tpl-picker-group">
+    <div class="picker-group">
+      <p class="picker-group__title"></p>
+      <ul class="picker-group__list"></ul>
+    </div>
+  </template>
+
+  <!-- Column picker: one location -->
+  <template id="tpl-picker-row">
+    <li class="picker-row">
+      <label class="picker-row__label">
+        <input type="checkbox" class="picker-row__check" />
+        <span class="picker-row__name"></span>
+        <span class="picker-row__locked" hidden><i class="fa-regular fa-lock"></i> Locked</span>
+      </label>
+    </li>
+  </template>
+  <!-- ══ /TEMPLATES ══ -->
+
+  <script src="location-board-data.js"></script>
+  <script src="location-board.js"></script>
+
+  <!--
+  ══ IMPLEMENTATION NOTES ══════════════════════════════════════════════
+
+  Components → markup / styles
+    • ViewTabs            → .view-tabs + tpl-view-tab        / .view-tab, .view-tab--add
+    • ViewPanel/Toolbar   → .view-panel, .view-toolbar        / same classes
+    • LocationBoard       → #board                            / .loc-board
+    • LocationColumn      → tpl-column, tpl-column-empty      / .loc-column (+ .is-locked, .is-drop-target)
+    • JobCard             → tpl-job-card                      / .job-card etc. in jobs-dashboard.css
+    • JobAside            → #jobAside                         / .flyout-*, .job-summary
+        – AsideTabs       → .aside-tabs, .aside-panel         / .tab-btn (design-tokens.css), .aside-tabs
+        – Activity        → #panelActivity, #timeForm, tpl-activity-row / .time-form, .activity-filter (notifications), .timeline-* (PL-JM-1.25)
+        – GeneralNotes    → .widget + tpl-note                 / .widget-*, .widget-note-* (from PL-JM-1.25) — read-only
+        – JobDetailCard   → tpl-detail-card/-section/-spec-tile / .detail-card-*, .detail-section-*, .spec-tile-* (from PL-JM-1.25)
+    • ColumnsAside        → #columnsAside, tpl-picker-*       / .picker, .picker-group, .picker-row
+    • Toast               → #toast                            / .toast
+
+  Simulated in JS (becomes Angular state / events / API calls):
+    • Views live in memory — no persistence. Real build: per-user saved views.
+    • Drag to pan: pointer events on #board (grab anywhere but a card or
+      control). Edge-scroll while dragging a card. Both are pure UI — no state.
+    • Drag and drop moves a job's location in memory. Real build: same call the
+      scanner makes to set a job's location. Locked columns refuse the drop
+      (dragover never preventDefaults), and their cards render with
+      draggable="false" (.is-pinned), so nothing drags out either.
+    • Log time form (.time-form): one line — hours and/or minutes, Sent proof?
+      and Task as datalist inputs that refuse anything not in the list (exact
+      or unique-prefix match snaps to the list value). Enter submits; focus
+      returns to Hours. Task saves its data-worktype-id. Real build: the
+      existing time entry endpoint.
+    • Activity merges SCANS + TIME_ENTRIES client-side, earliest first, and
+      filters by pill (all / scans / time / proofs sent = proof yes or
+      revised). Real build: one activity endpoint per job. A board move adds
+      a scan row ("Moved by …"); undo removes it.
+    • Aside tab switching — becomes a selected-tab signal in Angular.
+    • "Open job page" links to the PL-8.0 prototype.
+
+  Flagged:
+    • Department names are not in Loc_tab.xlsx — matched by hand (see data file).
+    • Local tokens --shadow-panel, --duration-panel, --duration-fast and
+      --column-width are not in design-tokens.css (see top of the CSS).
+  ═══════════════════════════════════════════════════════════════════════
+  -->
+</body>
+
+</html>

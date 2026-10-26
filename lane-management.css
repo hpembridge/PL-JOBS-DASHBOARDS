@@ -1,0 +1,583 @@
+/* ============================================================
+   Lane Management — prototype styles
+   Sits on top of design-tokens.css + customer-management.css;
+   only what's unique to this screen lives here.
+
+   Sections:
+     1. Status dots            .status-dot / .status--*
+     2. Chips                  .scope-chip
+     3. Context bar            .lane-context*
+     4. Lane strip             .lane-strip*
+     5. Lane tile              .lane-tile*
+     6. Lane editor flyout     .lane-flyout*, .modal-* overrides
+     7. Status picker          .status-picker, .status-option*
+   ============================================================ */
+
+/* ── 1. Status dots — the five true statuses ──────────────── */
+
+.status-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: var(--border-radius-full);
+  border: 2.5px solid var(--dot-line, var(--color-titanium-600));
+  background: var(--dot-fill, transparent);
+  flex: 0 0 auto;
+  display: inline-block;
+}
+.status-dot--lg { width: 17px; height: 17px; border-width: 3px; }
+
+.status--todo      { --dot-line: var(--datacolor-grape-04);  --dot-fill: var(--datacolor-grape-00); }
+.status--hold      { --dot-line: var(--datacolor-cherry-04); --dot-fill: var(--datacolor-cherry-00); }
+.status--elsewhere { --dot-line: var(--color-carbon-800);    --dot-fill: var(--color-carbon-100); }
+.status--client    { --dot-line: var(--datacolor-orange-04); --dot-fill: var(--datacolor-orange-00); }
+.status--done      { --dot-line: var(--datacolor-mint-04);   --dot-fill: var(--datacolor-mint-00); }
+
+/* ── 2. Chips ─────────────────────────────────────────────── */
+
+.scope-chip {
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: var(--border-radius-full);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  background: var(--bg-subtle);
+  white-space: nowrap;
+}
+.scope-chip--global   { border-color: var(--datacolor-mint-02);  color: var(--datacolor-mint-06);  background: var(--datacolor-mint-00); }
+.scope-chip--subgroup { border-color: var(--datacolor-lemon-02); color: var(--datacolor-lemon-06); background: var(--datacolor-lemon-00); }
+.scope-chip--personal { border-color: var(--datacolor-grape-02); color: var(--datacolor-grape-06); background: var(--datacolor-grape-00); }
+
+/* ── 3. Context bar ───────────────────────────────────────── */
+/* Who is viewing, and the board that follows from it. Department and
+   subgroup are facts, not fields — they read as text, not inputs. */
+
+.lane-context {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  margin-bottom: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius-lg);
+}
+.lane-context__field { display: flex; flex-direction: column; gap: 5px; }
+.lane-context__field .form-select { min-width: 230px; }
+
+.lane-context__facts {
+  display: flex;
+  gap: 28px;
+  padding-left: 28px;
+  border-left: 1px solid var(--border-subtle);
+}
+.lane-context__fact { display: flex; flex-direction: column; gap: 5px; }
+
+.lane-context__label {
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.lane-context__value { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+
+.lane-context__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-left: auto;
+  max-width: 330px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+.lane-context__note i { color: var(--text-tertiary); margin-top: 2px; }
+
+/* ── 4. Lane strip — the board, left to right ─────────────── */
+
+.lane-strip {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius-lg);
+  padding: 18px 20px 16px;
+  margin-bottom: 16px;
+}
+.lane-strip__header { display: flex; align-items: baseline; gap: 8px; }
+.lane-strip__title { font-size: 14px; font-weight: 650; color: var(--text-primary); }
+.lane-strip__count { font-size: 12px; color: var(--text-tertiary); }
+.lane-strip__add { margin-left: auto; align-self: center; }
+
+.lane-strip__help {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  max-width: 640px;
+  margin: 6px 0 16px;
+}
+
+.lane-strip__track {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  align-items: stretch;
+  padding-bottom: 4px;
+}
+.lane-strip__track::-webkit-scrollbar { height: 8px; }
+.lane-strip__track::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: var(--border-radius-full);
+}
+
+
+/* ── 5. Lane tile — one lane in the strip ─────────────────── */
+
+.lane-tile {
+  position: relative;
+  flex: 0 0 auto;
+  width: 186px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-top: 3px solid var(--tile-accent, var(--border-default));
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: border-color .12s, box-shadow .12s, transform .12s;
+}
+.lane-tile:hover {
+  border-color: var(--border-default);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .06);
+  transform: translateY(-1px);
+}
+.lane-tile.is-selected {
+  border-color: var(--interactive-default);
+  box-shadow: 0 0 0 1px var(--interactive-default);
+}
+.lane-tile.is-dragging { opacity: .4; }
+
+/* The top edge carries the lane's true-status color, so the board reads
+   as a run of statuses before you read a single lane name. */
+.lane-tile.status--todo      { --tile-accent: var(--datacolor-grape-03); }
+.lane-tile.status--hold      { --tile-accent: var(--datacolor-cherry-03); }
+.lane-tile.status--elsewhere { --tile-accent: var(--color-carbon-600); }
+.lane-tile.status--client    { --tile-accent: var(--datacolor-orange-03); }
+.lane-tile.status--done      { --tile-accent: var(--datacolor-mint-03); }
+
+.lane-tile__head { display: flex; align-items: center; gap: 6px; min-height: 26px; }
+.lane-tile__grip { color: var(--color-titanium-400); font-size: 11px; cursor: grab; }
+.lane-tile:hover .lane-tile__grip { color: var(--text-tertiary); }
+.lane-tile__order {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+.lane-tile__lock,
+.lane-tile__actions {
+  display: none;
+  margin-left: auto;
+}
+.lane-tile:hover .lane-tile__actions,
+.lane-tile:focus-within .lane-tile__actions { display: flex; gap: 2px; }
+.lane-tile:hover .lane-tile__lock,
+.lane-tile:focus-within .lane-tile__lock { display: inline-flex; }
+
+.lane-tile__lock {
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.lane-tile__action {
+  width: 24px;
+  height: 24px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.lane-tile__action:hover { color: var(--text-primary); background: var(--bg-subtle); }
+.lane-tile__action--delete:hover { color: var(--datacolor-cherry-05); background: var(--status-error-bg); }
+
+/* Inline delete confirmation, covering the tile it belongs to */
+.lane-tile.is-confirming { border-color: var(--status-error-border); }
+.lane-tile__confirm {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  text-align: center;
+  background: var(--bg-surface);
+  border-radius: var(--border-radius-md);
+}
+.lane-tile__confirm-text { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.lane-tile__confirm-actions { display: flex; gap: 10px; }
+.lane-tile__confirm-yes { color: var(--datacolor-cherry-05); }
+.lane-tile.is-locked .lane-tile__grip { visibility: hidden; }
+
+.lane-tile__name {
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+.lane-tile__status { display: flex; align-items: center; gap: 7px; }
+.lane-tile__status-label { font-size: 12px; color: var(--text-secondary); }
+.lane-tile .scope-chip { align-self: flex-start; margin-top: 2px; }
+
+/* ── 6. Lane editor flyout ────────────────────────────────── */
+/* Structure is the house flyout (.modal-overlay / .modal-panel in
+   customer-management.css); only the lane-specific parts live here. */
+
+.lane-flyout { width: 680px; }
+
+.lane-flyout__heading { display: flex; align-items: center; gap: 10px; }
+.lane-flyout__header-actions { display: flex; align-items: center; gap: 4px; }
+
+.modal-footer { justify-content: space-between; }
+.modal-footer #btn-save { margin-left: auto; }
+
+/* Read-only when the viewer lacks permission */
+.modal-overlay.is-locked .modal-body { opacity: .55; pointer-events: none; }
+.modal-overlay.is-locked .modal-footer { display: none; }
+
+.lane-lock-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 11px 20px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  background: var(--status-warning-bg);
+  border-bottom: 1px solid var(--status-warning-border);
+  flex-shrink: 0;
+}
+.lane-lock-banner i { margin-top: 2px; }
+
+.btn-delete-icon { color: var(--datacolor-cherry-05); }
+.btn-delete-icon:hover { background: var(--status-error-bg); }
+.btn-delete-icon:disabled { opacity: .35; cursor: not-allowed; }
+
+
+/* ── Field sections ── */
+.field-section { margin-bottom: 26px; }
+.field-section:last-child { margin-bottom: 0; }
+.field-section__title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 5px;
+}
+.field-section__help {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+  max-width: 560px;
+}
+
+/* ── 7. Status picker — one row per true status ───────────── */
+
+.status-picker { display: grid; gap: 6px; }
+.status-option {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: border-color .12s, background .12s;
+}
+.status-option:hover { background: var(--bg-subtle); }
+.status-option.is-selected {
+  border-color: var(--interactive-default);
+  background: var(--interactive-bg-subtle);
+  box-shadow: inset 0 0 0 1px var(--interactive-default);
+}
+.status-option input { position: absolute; opacity: 0; pointer-events: none; }
+.status-option__text { display: flex; flex-direction: column; gap: 1px; }
+.status-option__label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.status-option__blurb { font-size: 12px; color: var(--text-secondary); }
+
+/* ============================================================
+   8. Board lanes — person-dashboard.html
+   Extends .lane / .lane-header / .lane-cards in jobs-dashboard.css
+   with the lane-concept parts: true-status color, scope chip, and
+   inline lane management.
+   ============================================================ */
+
+.lane { position: relative; }
+
+/* Top edge carries the lane's true status, same as the strip tiles. */
+.lane {
+  border-top: 3px solid var(--tile-accent, var(--border-default));
+}
+.lane.status--todo      { --tile-accent: var(--datacolor-grape-03); }
+.lane.status--hold      { --tile-accent: var(--datacolor-cherry-03); }
+.lane.status--elsewhere { --tile-accent: var(--color-carbon-600); }
+.lane.status--client    { --tile-accent: var(--datacolor-orange-03); }
+.lane.status--done      { --tile-accent: var(--datacolor-mint-03); }
+
+.lane.is-selected { box-shadow: 0 0 0 1px var(--interactive-default); }
+.lane.is-dragging { opacity: .4; }
+
+/* The header is the hover target for lane management, and it holds its
+   height whether or not the controls are showing — 48px is the hovered
+   height (24px controls + 12px padding top and bottom), so nothing shifts
+   when they appear. */
+.lane-header {
+  gap: 8px;
+  height: 48px;
+}
+
+/* Per-lane management — shown on hover, removed outright when the viewer's
+   scope doesn't allow editing this lane. The lock behaves the same way, so
+   both read as "this appears when you reach for the lane". */
+.lane-actions,
+.lane-lock {
+  display: none;
+  margin-left: auto;
+}
+.lane-header:hover .lane-actions,
+.lane-header:focus-within .lane-actions { display: flex; gap: 2px; }
+.lane-header:hover .lane-lock,
+.lane-header:focus-within .lane-lock { display: inline-flex; }
+
+.lane-lock {
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+
+.lane-action { width: 24px; height: 24px; padding: 0; line-height: 1; font-size: 11px; color: var(--text-tertiary); }
+.lane-action:hover { color: var(--text-primary); background: var(--bg-subtle); }
+.lane-action--delete:hover { color: var(--datacolor-cherry-05); background: var(--status-error-bg); }
+
+/* Inline delete confirmation, covering the lane it belongs to */
+.lane.is-confirming { box-shadow: 0 0 0 1px var(--status-error-border); }
+.lane-confirm {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  text-align: center;
+  background: var(--bg-surface);
+  border-radius: var(--border-radius-md);
+}
+.lane-confirm__text { font-size: 14px; font-weight: 650; color: var(--text-primary); }
+.lane-confirm__note { font-size: 12px; color: var(--text-secondary); }
+.lane-confirm__actions { display: flex; gap: 12px; margin-top: 4px; }
+.lane-confirm__yes { color: var(--datacolor-cherry-05); }
+
+/* Add-lane column at the end of the board */
+.lane--add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 160px;
+  background: transparent;
+  border: 1.5px dashed var(--border-default);
+  border-radius: var(--border-radius-md);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: border-color .12s, color .12s, background .12s;
+}
+.lane--add:hover {
+  border-color: var(--interactive-default);
+  color: var(--interactive-default);
+  background: var(--interactive-bg-subtle);
+}
+.lane--add i { font-size: 16px; }
+.lane--add__label { font-size: 13px; font-weight: 600; }
+.lane--add__scope {
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+
+/* ── Drag to pan ──────────────────────────────────────────── */
+/* Matches PL-JM-1.25/dashboard-board.css — the board is grabbable
+   anywhere that isn't a card, a lane header, or a control. */
+
+.kanban { cursor: grab; }
+.kanban.is-panning {
+  cursor: grabbing;
+  user-select: none;
+  scroll-behavior: auto;
+}
+.kanban .job-card,
+.kanban .lane-header,
+.kanban .lane--add { cursor: pointer; }
+.kanban .lane-header { cursor: grab; }
+.kanban .lane.is-locked .lane-header { cursor: default; }
+
+/* ── Drop gaps — you drop BETWEEN lanes ───────────────────── */
+/* The gap stays visually tight so lanes don't jump apart, but its HIT AREA
+   is much wider than it looks: ::after reaches ~16px into the lane on each
+   side, giving a ~40px target for a 6px gap. That hit area is inert until a
+   lane is actually being dragged, so it never steals a click from a card or
+   a lane header. ::before is the insertion line you actually see. */
+
+.lane-drop {
+  flex: 0 0 6px;
+  align-self: stretch;
+  position: relative;
+}
+
+/* The visible insertion line */
+.lane-drop::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  border-radius: var(--border-radius-full);
+  background: transparent;
+  transition: background .1s, width .1s;
+}
+
+/* The hit area — wider than the gap, live only while reordering */
+.lane-drop::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -16px;
+  right: -16px;
+  pointer-events: none;
+}
+
+.is-reordering .lane-drop { z-index: 5; }
+.is-reordering .lane-drop::after { pointer-events: auto; }
+.is-reordering .lane-drop::before { background: var(--border-subtle); }
+
+.lane-drop.is-over::before {
+  background: var(--interactive-default);
+  width: 4px;
+  box-shadow: 0 0 0 3px var(--interactive-bg-subtle);
+}
+
+/* The strip's gaps are shorter than a board lane's */
+.lane-strip__track .lane-drop::before { top: 8px; bottom: 8px; }
+
+/* ============================================================
+   9. Handoff lanes
+   Completed is the only status that leaves a board, so a Completed
+   lane is a door. Two kinds: one opens onto another board, the
+   other onto a physical scan location — and the second can't be
+   walked through by dragging.
+   ============================================================ */
+
+.lane-handoff,
+.lane-tile__handoff {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.lane-handoff {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-subtle);
+}
+.lane-handoff i,
+.lane-tile__handoff i { color: var(--text-tertiary); font-size: 10px; }
+.lane-handoff__target,
+.lane-tile__handoff-target { font-weight: 650; color: var(--text-primary); }
+
+.lane-handoff__mode,
+.lane-tile__handoff-mode {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: var(--border-radius-full);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-tertiary);
+  background: var(--bg-surface);
+}
+.needs-scan .lane-handoff__mode,
+.lane-tile.needs-scan .lane-tile__handoff-mode {
+  border-color: var(--datacolor-orange-03);
+  color: var(--datacolor-orange-06);
+  background: var(--datacolor-orange-00);
+}
+
+/* A scan-mapped lane is a staging lane, not an exit — the dashed edge says
+   work piles up here until someone walks it. */
+.lane.needs-scan { border-style: dashed; }
+
+.lane-scan-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--datacolor-orange-00);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.lane.is-stale .lane-scan-note {
+  background: var(--status-error-bg);
+  color: var(--datacolor-cherry-06);
+}
+.lane-scan-note__text { flex: 1; }
+
+/* ── Job cards in motion ──────────────────────────────────── */
+
+.job-card { cursor: grab; }
+.job-card.is-dragging { opacity: .4; }
+.job-card.is-unclaimed { border-style: dashed; }
+
+.card-waiting {
+  margin-top: 6px;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--datacolor-orange-06);
+}
+
+/* A lane accepting a job, and one refusing it because the ticket is real */
+.lane.is-job-target {
+  box-shadow: 0 0 0 2px var(--interactive-default);
+  background: var(--interactive-bg-subtle);
+}
+.lane.is-job-blocked {
+  box-shadow: 0 0 0 2px var(--status-error-border);
+  background: var(--status-error-bg);
+  cursor: not-allowed;
+}

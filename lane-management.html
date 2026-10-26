@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lane Management — Active Jobs Dashboards</title>
+  <script src="https://kit.fontawesome.com/da08280601.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="shared/css/design-tokens.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=optional"
+    rel="stylesheet">
+  <link rel="stylesheet" href="customer-management.css" />
+  <link rel="stylesheet" href="jobs-dashboard.css" />
+  <link rel="stylesheet" href="lane-management.css" />
+</head>
+
+<body data-theme="titanium">
+  <div class="main">
+
+    <!-- ══ TOP BAR ══ -->
+    <div class="topbar">
+      <div class="breadcrumb type-body-sm">
+        <a href="index.html"><i class="fa-regular fa-folder"></i> Jobs Dashboards</a>
+        <span class="sep">›</span>
+        <span class="current">Lane Management</span>
+      </div>
+    </div>
+    <!-- ══ /TOP BAR ══ -->
+
+    <div class="page-content">
+
+      <!-- ══ CONTEXT BAR ══
+           Who is viewing and which board's lanes are being managed.
+           The viewer switcher is a prototype device for demoing permissions —
+           in Angular this is the signed-in user, not a control. ══ -->
+      <div class="lane-context">
+        <div class="lane-context__field">
+          <label class="lane-context__label" for="viewer-select">Viewing as</label>
+          <select id="viewer-select" class="form-select"></select>
+        </div>
+
+        <div class="lane-context__facts">
+          <div class="lane-context__fact">
+            <span class="lane-context__label">Board</span>
+            <span class="lane-context__value" id="dept-display"></span>
+          </div>
+          <div class="lane-context__fact">
+            <span class="lane-context__label">User subgroup</span>
+            <span class="lane-context__value" id="subgroup-display"></span>
+          </div>
+        </div>
+
+        <p class="lane-context__note">
+          <i class="fa-regular fa-circle-info"></i>
+          <span id="permission-note"></span>
+        </p>
+      </div>
+      <!-- ══ /CONTEXT BAR ══ -->
+
+      <!-- ══ LANE STRIP ══
+           The board itself, left to right. Position is progress; drag to
+           reorder; click a lane to edit it below. ══ -->
+      <section class="lane-strip">
+        <div class="lane-strip__header">
+          <span class="lane-strip__title">Lanes on this board</span>
+          <span class="lane-strip__count" id="lane-count"></span>
+          <button type="button" class="text-btn lane-strip__add" id="btn-add-lane">
+            <i class="fa-regular fa-plus"></i> Add lane
+          </button>
+        </div>
+        <p class="lane-strip__help">
+          Lanes in board order — a lane's position is its progress, which is what separates
+          "On deck" from "Design" when both report as To do. Drag to reorder, click to edit.
+        </p>
+        <div class="lane-strip__track" id="lane-track"></div>
+      </section>
+      <!-- ══ /LANE STRIP ══ -->
+
+
+
+    </div><!-- /page-content -->
+
+    <!-- ══ LANE EDITOR FLYOUT ══
+         House flyout pattern (.modal-overlay / .modal-panel from
+         customer-management.css), opened by clicking a lane in the strip. ══ -->
+    <div class="modal-overlay" id="lane-flyout">
+      <div class="modal-panel lane-flyout">
+
+        <div class="modal-header">
+          <div class="lane-flyout__heading">
+            <span class="status-dot status-dot--lg" id="editor-dot"></span>
+            <span class="modal-title" id="editor-title">Lane</span>
+            <span class="scope-chip" id="editor-scope-chip">Global</span>
+          </div>
+          <button type="button" class="modal-close" id="btn-close" aria-label="Close">&times;</button>
+        </div>
+
+        <!-- Shown instead of enabling the form when the viewer can't edit -->
+        <div class="lane-lock-banner" id="editor-lock" hidden>
+          <i class="fa-regular fa-lock"></i>
+          <span id="editor-lock-text"></span>
+        </div>
+
+        <div class="modal-body">
+
+          <!-- ── Lane basics ── -->
+          <div class="field-section">
+            <div class="form-group">
+              <label class="form-label" for="lane-name">Lane name</label>
+              <input type="text" id="lane-name" class="form-input" placeholder="e.g. Initial proofreading" />
+            </div>
+            <div class="form-row form-row-2">
+              <div class="form-group">
+                <label class="form-label" for="lane-scope">Belongs to</label>
+                <select id="lane-scope" class="form-select"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="lane-subgroup">User subgroup</label>
+                <select id="lane-subgroup" class="form-select"></select>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── True status ── -->
+          <div class="field-section">
+            <div class="field-section__title">True status</div>
+            <p class="field-section__help">
+              Every lane reports as exactly one of the five true statuses. This is what
+              reporting reads — the lane name is only what the board calls it.
+            </p>
+            <div class="status-picker" id="status-picker"></div>
+          </div>
+
+          <!-- ── Destination — Completed lanes only ── -->
+          <div class="field-section" id="destination-section" hidden>
+            <div class="field-section__title">Destination</div>
+            <p class="field-section__help">
+              Completed is the only status that leaves this board, so this lane needs
+              somewhere to send work. Point it at another board and a drop hands the job
+              straight over. Point it at a physical scan location and the job waits here
+              until someone walks it — dragging can't move a paper ticket.
+            </p>
+            <div class="form-row form-row-2">
+              <div class="form-group">
+                <label class="form-label" for="dest-type">Sends work to</label>
+                <select id="dest-type" class="form-select">
+                  <option value="board">Another board — no physical ticket</option>
+                  <option value="scan">A scan location — ticket has to be walked</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="dest-value">Which one</label>
+                <select id="dest-value" class="form-select"></select>
+              </div>
+            </div>
+            <p class="field-section__help" id="destination-echo"></p>
+          </div>
+
+        </div><!-- /modal-body -->
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="btn-cancel">Cancel</button>
+          <button type="button" class="btn-primary" id="btn-save">Save lane</button>
+        </div>
+
+      </div><!-- /modal-panel -->
+    </div>
+    <!-- ══ /LANE EDITOR FLYOUT ══ -->
+
+  </div><!-- /main -->
+
+  <div class="toast" id="toast"></div>
+
+  <!-- ══ TEMPLATES ══
+       Real markup for the repeated rows, cloned by the script below.
+       Each of these becomes an *ngFor block in Angular. ══ -->
+
+  <!-- One lane in the board strip -->
+  <template id="tpl-lane-tile">
+    <div class="lane-tile" draggable="true">
+      <div class="lane-tile__head">
+        <span class="lane-tile__grip"><i class="fa-solid fa-grip-vertical"></i></span>
+        <span class="lane-tile__order"></span>
+        <i class="fa-regular fa-lock lane-tile__lock" title="Managed for you"></i>
+        <!-- Edit and delete live on the lane itself, and are removed
+             entirely when the viewer can't edit that lane. -->
+        <span class="lane-tile__actions">
+          <button type="button" class="icon-btn lane-tile__action" data-action="edit"
+            title="Edit lane" aria-label="Edit lane"><i class="fa-regular fa-pen"></i></button>
+          <button type="button" class="icon-btn lane-tile__action lane-tile__action--delete"
+            data-action="delete" title="Delete lane" aria-label="Delete lane"><i class="fa-regular fa-trash-can"></i></button>
+        </span>
+      </div>
+      <div class="lane-tile__name"></div>
+      <div class="lane-tile__status">
+        <span class="status-dot"></span>
+        <span class="lane-tile__status-label"></span>
+      </div>
+      <!-- Handoff lanes only -->
+      <div class="lane-tile__handoff" hidden>
+        <i class="fa-regular fa-arrow-right-from-bracket"></i>
+        <span class="lane-tile__handoff-target"></span>
+        <span class="lane-tile__handoff-mode"></span>
+      </div>
+      <span class="scope-chip"></span>
+
+      <!-- Inline delete confirmation, covering the tile -->
+      <div class="lane-tile__confirm" hidden>
+        <p class="lane-tile__confirm-text">Delete this lane?</p>
+        <div class="lane-tile__confirm-actions">
+          <button type="button" class="text-btn" data-action="confirm-cancel">Cancel</button>
+          <button type="button" class="text-btn lane-tile__confirm-yes" data-action="confirm-delete">Delete</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+
+  <!-- The gap between two lanes — this is the drop target when reordering -->
+  <template id="tpl-lane-drop">
+    <div class="lane-drop"></div>
+  </template>
+
+  <!-- One true-status option in the editor -->
+  <template id="tpl-status-option">
+    <label class="status-option">
+      <input type="radio" name="true-status" />
+      <span class="status-dot"></span>
+      <span class="status-option__text">
+        <span class="status-option__label"></span>
+        <span class="status-option__blurb"></span>
+      </span>
+    </label>
+  </template>
+
+
+
+  <!-- ══ /TEMPLATES ══ -->
+
+  <script src="mock-data.js"></script>
+  <script src="lane-data.js"></script>
+  <script src="lane-editor.js"></script>
+  <script src="lane-management.js"></script>
+</body>
+
+</html>

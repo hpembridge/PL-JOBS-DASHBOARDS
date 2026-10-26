@@ -1,0 +1,307 @@
+/* ============================================================
+   Board Map — prototype styles
+   Sits on top of design-tokens.css + customer-management.css +
+   jobs-dashboard.css + lane-management.css (status dots, scope chips).
+   Only what's unique to the map lives here.
+
+   Sections:
+     1. Intro                 .map-intro*
+     2. Legend additions      .map-legend*
+     3. Map canvas            .map, .map-canvas, .map-bands
+     4. Board band            .map-band*
+     5. Lane node             .map-lane*
+     6. Scan location node    .map-stop*
+     7. Connectors            .map-wire*, .map-arrow*
+     8. Tracing (hover)       .map.is-tracing, .is-lit
+   ============================================================ */
+
+/* ── 1. Intro ─────────────────────────────────────────────── */
+
+.map-intro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+.map-intro__title {
+  font-size: 20px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  line-height: 1.3;         /* design-tokens h1 sets a display line-height */
+  margin: 0 0 4px;
+}
+.map-intro__note {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  max-width: 720px;
+  margin: 0;
+}
+.map-intro__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+/* ── 2. Legend additions ──────────────────────────────────── */
+
+.map-legend { gap: 28px; }
+.map-legend__group { display: inline-flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.map-legend .status-dot { width: 11px; height: 11px; border-width: 2px; }
+
+/* A short sample of each connector kind */
+.map-legend__line {
+  width: 26px;
+  height: 0;
+  border-top: 2px solid var(--wire-color);
+  flex-shrink: 0;
+}
+.map-legend__line--board { --wire-color: var(--interactive-default); }
+.map-legend__line--scan  { --wire-color: var(--datacolor-orange-04); border-top-style: dashed; }
+.map-legend__line--feed  { --wire-color: var(--color-titanium-600);  border-top-style: dotted; }
+
+/* ── 3. Map canvas ────────────────────────────────────────── */
+/* The map scrolls in both directions inside the page. The canvas is the
+   coordinate space for the connectors: the SVG fills it, bands sit above. */
+
+.map {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius-lg);
+  margin-bottom: 24px;
+}
+
+.map-canvas {
+  position: relative;
+  width: max-content;
+  min-width: 100%;
+  /* Left padding is the routing channel connectors use to reach a board
+     that isn't directly above or below. */
+  padding: 32px 48px 40px 88px;
+}
+
+.map-wires {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 1;               /* above the bands, so lines run across band padding */
+}
+
+.map-bands {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* The gutter between bands carries the connectors running across. It
+     holds one track per connector, 8px apart — 96px fits about nine. */
+  gap: 96px;
+}
+
+/* ── 4. Board band ────────────────────────────────────────── */
+
+.map-band {
+  display: flex;
+  align-items: stretch;
+  gap: 20px;
+  padding: 16px;
+  background: var(--bg-page);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius-lg);
+  width: max-content;
+}
+
+.map-band__head {
+  width: 140px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-right: 16px;
+  border-right: 1px solid var(--border-subtle);
+}
+.map-band__icon { color: var(--text-tertiary); font-size: 12px; margin-bottom: 4px; }
+.map-band__title {
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  line-height: 1.3;
+  margin: 0;
+}
+.map-band__meta  { font-size: 11px; color: var(--text-tertiary); }
+.map-band__count { font-size: 11px; color: var(--text-secondary); margin-top: auto; padding-top: 8px; }
+
+.map-band__lanes {
+  display: flex;
+  align-items: stretch;
+  gap: 32px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* The scan-location band reads as "off the boards": dashed and quieter */
+.map-band--stops {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--border-default);
+}
+
+/* ── 5. Lane node ─────────────────────────────────────────── */
+
+.map-lane {
+  position: relative;
+  width: 172px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-top: 3px solid var(--tile-accent, var(--border-default));
+  border-radius: var(--border-radius-md);
+  cursor: default;
+  transition: opacity .15s, box-shadow .15s;
+}
+.map-lane:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+
+.map-lane.status--todo      { --tile-accent: var(--datacolor-grape-03); }
+.map-lane.status--hold      { --tile-accent: var(--datacolor-cherry-03); }
+.map-lane.status--elsewhere { --tile-accent: var(--color-carbon-600); }
+.map-lane.status--client    { --tile-accent: var(--datacolor-orange-03); }
+.map-lane.status--done      { --tile-accent: var(--datacolor-mint-03); }
+
+/* Progress arrow between lanes on the same board */
+.map-lane + .map-lane::before {
+  content: "\203A";
+  position: absolute;
+  left: -22px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  line-height: 1;
+  color: var(--color-titanium-400);
+}
+
+/* Position 0 — where work arrives on this board */
+.map-lane__start {
+  position: absolute;
+  top: -11px;
+  left: 10px;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 1px 7px;
+  border-radius: var(--border-radius-full);
+  background: var(--interactive-default);
+  color: var(--text-on-dark);
+}
+
+.map-lane__head { display: flex; align-items: flex-start; gap: 6px; }
+.map-lane__head .status-dot { margin-top: 2px; }
+.map-lane__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+.map-lane__count {
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--text-secondary);
+  background: var(--bg-subtle);
+  border-radius: var(--border-radius-full);
+  padding: 1px 7px;
+}
+.map-lane.is-empty .map-lane__count { color: var(--text-tertiary); }
+
+.map-lane__meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.map-lane__status { font-size: 11px; color: var(--text-tertiary); }
+
+/* Handoff detail — same treatment as .lane-handoff on the board */
+.map-lane__handoff {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding-top: 6px;
+  border-top: 1px solid var(--border-subtle);
+}
+.map-lane__handoff i { color: var(--text-tertiary); font-size: 10px; }
+.map-lane__target { font-weight: 650; color: var(--text-primary); }
+.map-lane__mode {
+  margin-left: auto;
+  font-size: 10px;
+  padding: 0 6px;
+  border-radius: var(--border-radius-full);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+.map-lane.needs-scan { border-style: dashed; border-top-style: solid; }
+.map-lane.needs-scan .map-lane__mode {
+  border-color: var(--datacolor-orange-03);
+  color: var(--datacolor-orange-06);
+  background: var(--datacolor-orange-00);
+}
+
+.map-lane__waiting { font-size: 11px; color: var(--text-secondary); }
+.map-lane.is-stale .map-lane__waiting { color: var(--datacolor-cherry-06); font-weight: 650; }
+
+/* ── 6. Scan location node ────────────────────────────────── */
+
+.map-stop {
+  width: 172px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--bg-surface);
+  border: 1px dashed var(--datacolor-orange-03);
+  border-radius: var(--border-radius-md);
+  transition: opacity .15s;
+}
+.map-stop:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+.map-stop__head { display: flex; align-items: center; gap: 6px; }
+.map-stop__head i { color: var(--datacolor-orange-05); font-size: 12px; }
+.map-stop__name { font-size: 13px; font-weight: var(--font-weight-semibold); color: var(--text-primary); }
+.map-stop__next { font-size: 11px; color: var(--text-tertiary); }
+
+/* ── 7. Connectors ────────────────────────────────────────── */
+
+.map-wire {
+  fill: none;
+  stroke: var(--wire-color);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  transition: opacity .15s, stroke-width .15s;
+}
+.map-wire--board { --wire-color: var(--interactive-default); }
+.map-wire--scan  { --wire-color: var(--datacolor-orange-04); stroke-dasharray: 6 5; }
+.map-wire--feed  { --wire-color: var(--color-titanium-600);  stroke-dasharray: 1 5; stroke-width: 2.5; }
+
+.map-arrow--board path { fill: var(--interactive-default); }
+.map-arrow--scan  path { fill: var(--datacolor-orange-04); }
+.map-arrow--feed  path { fill: var(--color-titanium-600); }
+
+/* ── 8. Tracing ───────────────────────────────────────────── */
+/* Hovering or focusing a node dims everything not connected to it. */
+
+.map.is-tracing .map-wire        { opacity: .12; }
+.map.is-tracing .map-lane,
+.map.is-tracing .map-stop        { opacity: .35; }
+.map.is-tracing .map-wire.is-lit { opacity: 1; stroke-width: 3; }
+.map.is-tracing .map-lane.is-lit,
+.map.is-tracing .map-stop.is-lit { opacity: 1; box-shadow: 0 0 0 2px var(--border-focus); }

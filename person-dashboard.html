@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Active Jobs — Active Jobs Dashboards</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://kit.fontawesome.com/da08280601.js" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="shared/css/design-tokens.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,101 +13,265 @@
     rel="stylesheet">
   <link rel="stylesheet" href="customer-management.css" />
   <link rel="stylesheet" href="jobs-dashboard.css" />
+  <link rel="stylesheet" href="lane-management.css" />
 </head>
 
 <body data-theme="titanium">
   <div class="main">
 
-    <!-- ── TOP BAR ── -->
+    <!-- ══ TOP BAR ══ -->
     <div class="topbar">
       <div class="breadcrumb type-body-sm">
         <a href="index.html"><i class="fa-regular fa-folder"></i> Jobs Dashboards</a>
-        <span class="sep">›</span>
+        <span class="sep">&rsaquo;</span>
         <span class="current">My Active Jobs</span>
       </div>
     </div>
+    <!-- ══ /TOP BAR ══ -->
 
-    <!-- ── PAGE CONTENT ── -->
     <div class="page-content">
 
-      <div class="viewing-as">
-        <label for="person-select">Viewing as</label>
-        <select id="person-select" onchange="onPersonChange()"></select>
-      </div>
-      <div class="dept-meta" id="person-dept"></div>
+      <!-- ══ CONTEXT BAR ══
+           Who is viewing. The switcher is a prototype device for demoing the
+           three roles — in Angular this is the signed-in user, not a control. ══ -->
+      <div class="lane-context">
+        <div class="lane-context__field">
+          <label class="lane-context__label" for="viewer-select">Viewing as</label>
+          <select id="viewer-select" class="form-select"></select>
+        </div>
 
+        <div class="lane-context__facts">
+          <div class="lane-context__fact">
+            <span class="lane-context__label">Board</span>
+            <span class="lane-context__value" id="dept-display"></span>
+          </div>
+          <div class="lane-context__fact">
+            <span class="lane-context__label">User subgroup</span>
+            <span class="lane-context__value" id="subgroup-display"></span>
+          </div>
+          <div class="lane-context__fact">
+            <span class="lane-context__label">Assigned jobs</span>
+            <span class="lane-context__value" id="job-count"></span>
+          </div>
+        </div>
+
+        <p class="lane-context__note">
+          <i class="fa-regular fa-circle-info"></i>
+          <span id="permission-note"></span>
+        </p>
+      </div>
+      <!-- ══ /CONTEXT BAR ══ -->
+
+      <!-- ══ BOARD TOOLBAR ══ -->
       <div class="board-toolbar">
         <div class="search-container">
           <i class="fa-regular fa-magnifying-glass"></i>
           <input type="text" id="search-input" class="search-input" placeholder="Search my jobs..." autocomplete="off" />
         </div>
       </div>
-      <div class="legend" id="legend"></div>
+      <!-- ══ /BOARD TOOLBAR ══ -->
 
-      <!-- ── BOARD ── -->
+      <!-- ══ BOARD ══
+           Lanes come from lane-data.js, in board order. Lane management is
+           inline here — edit, delete and add are gated by the same scope
+           rules as the Lane Management screen. ══ -->
       <div class="kanban" id="kanban"></div>
+      <!-- ══ /BOARD ══ -->
 
     </div><!-- /page-content -->
+
+    <!-- ══ LANE EDITOR FLYOUT ══
+         House flyout pattern (.modal-overlay / .modal-panel from
+         customer-management.css), opened by clicking a lane in the strip. ══ -->
+    <div class="modal-overlay" id="lane-flyout">
+      <div class="modal-panel lane-flyout">
+
+        <div class="modal-header">
+          <div class="lane-flyout__heading">
+            <span class="status-dot status-dot--lg" id="editor-dot"></span>
+            <span class="modal-title" id="editor-title">Lane</span>
+            <span class="scope-chip" id="editor-scope-chip">Global</span>
+          </div>
+          <button type="button" class="modal-close" id="btn-close" aria-label="Close">&times;</button>
+        </div>
+
+        <!-- Shown instead of enabling the form when the viewer can't edit -->
+        <div class="lane-lock-banner" id="editor-lock" hidden>
+          <i class="fa-regular fa-lock"></i>
+          <span id="editor-lock-text"></span>
+        </div>
+
+        <div class="modal-body">
+
+          <!-- ── Lane basics ── -->
+          <div class="field-section">
+            <div class="form-group">
+              <label class="form-label" for="lane-name">Lane name</label>
+              <input type="text" id="lane-name" class="form-input" placeholder="e.g. Initial proofreading" />
+            </div>
+            <div class="form-row form-row-2">
+              <div class="form-group">
+                <label class="form-label" for="lane-scope">Belongs to</label>
+                <select id="lane-scope" class="form-select"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="lane-subgroup">User subgroup</label>
+                <select id="lane-subgroup" class="form-select"></select>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── True status ── -->
+          <div class="field-section">
+            <div class="field-section__title">True status</div>
+            <p class="field-section__help">
+              Every lane reports as exactly one of the five true statuses. This is what
+              reporting reads — the lane name is only what the board calls it.
+            </p>
+            <div class="status-picker" id="status-picker"></div>
+          </div>
+
+          <!-- ── Destination — Completed lanes only ── -->
+          <div class="field-section" id="destination-section" hidden>
+            <div class="field-section__title">Destination</div>
+            <p class="field-section__help">
+              Completed is the only status that leaves this board, so this lane needs
+              somewhere to send work. Point it at another board and a drop hands the job
+              straight over. Point it at a physical scan location and the job waits here
+              until someone walks it — dragging can't move a paper ticket.
+            </p>
+            <div class="form-row form-row-2">
+              <div class="form-group">
+                <label class="form-label" for="dest-type">Sends work to</label>
+                <select id="dest-type" class="form-select">
+                  <option value="board">Another board — no physical ticket</option>
+                  <option value="scan">A scan location — ticket has to be walked</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="dest-value">Which one</label>
+                <select id="dest-value" class="form-select"></select>
+              </div>
+            </div>
+            <p class="field-section__help" id="destination-echo"></p>
+          </div>
+
+        </div><!-- /modal-body -->
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="btn-cancel">Cancel</button>
+          <button type="button" class="btn-primary" id="btn-save">Save lane</button>
+        </div>
+
+      </div><!-- /modal-panel -->
+    </div>
+    <!-- ══ /LANE EDITOR FLYOUT ══ -->
+
   </div><!-- /main -->
 
   <div class="toast" id="toast"></div>
 
+  <!-- ══ TEMPLATES ══
+       Real markup for the repeated blocks, cloned by the scripts below.
+       Each becomes an @for block in Angular. ══ -->
+
+  <!-- One lane on the board -->
+  <template id="tpl-lane">
+    <div class="lane">
+      <!-- The header is the drag handle; the board itself pans, so the lane
+           body must stay free for panning. -->
+      <div class="lane-header">
+        <span class="status-dot"></span>
+        <span class="lane-title"></span>
+        <span class="lane-count"></span>
+        <i class="fa-regular fa-lock lane-lock" title="Managed for you"></i>
+        <!-- Per-lane management, removed entirely when the viewer's scope
+             doesn't allow editing this lane. -->
+        <span class="lane-actions">
+          <button type="button" class="icon-btn lane-action" data-action="edit"
+            title="Edit lane" aria-label="Edit lane"><i class="fa-regular fa-pen"></i></button>
+          <button type="button" class="icon-btn lane-action lane-action--delete" data-action="delete"
+            title="Delete lane" aria-label="Delete lane"><i class="fa-regular fa-trash-can"></i></button>
+        </span>
+      </div>
+      <!-- Handoff lanes only: where this lane sends work, and whether a
+           scan is required to get it there. -->
+      <div class="lane-handoff" hidden>
+        <i class="fa-regular fa-arrow-right-from-bracket"></i>
+        <span class="lane-handoff__target"></span>
+        <span class="lane-handoff__mode"></span>
+      </div>
+
+      <div class="lane-cards"></div>
+
+      <!-- Scan-mapped lanes only: these jobs are waiting on a physical walk -->
+      <div class="lane-scan-note" hidden>
+        <span class="lane-scan-note__text"></span>
+        <button type="button" class="text-btn" data-action="simulate-scan">Simulate scan</button>
+      </div>
+
+      <!-- Inline delete confirmation, covering the lane -->
+      <div class="lane-confirm" hidden>
+        <p class="lane-confirm__text">Delete this lane?</p>
+        <p class="lane-confirm__note"></p>
+        <div class="lane-confirm__actions">
+          <button type="button" class="text-btn" data-action="confirm-cancel">Cancel</button>
+          <button type="button" class="text-btn lane-confirm__yes" data-action="confirm-delete">Delete</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- One job card -->
+  <template id="tpl-job-card">
+    <div class="job-card" draggable="true">
+      <div class="card-body">
+        <div class="card-job"></div>
+        <div class="card-desc"></div>
+        <div class="card-customer"></div>
+        <div class="card-mgmt"></div>
+        <div class="card-waiting" hidden></div>
+      </div>
+      <div class="card-stripe"></div>
+    </div>
+  </template>
+
+  <!-- The gap between two lanes — this is the drop target when reordering -->
+  <template id="tpl-lane-drop">
+    <div class="lane-drop"></div>
+  </template>
+
+  <!-- Empty lane -->
+  <template id="tpl-lane-empty">
+    <div class="lane-empty">Nothing here</div>
+  </template>
+
+  <!-- The add-lane column at the end of the board -->
+  <template id="tpl-add-lane">
+    <button type="button" class="lane lane--add" id="btn-add-lane">
+      <i class="fa-regular fa-plus"></i>
+      <span class="lane--add__label">Add lane</span>
+      <span class="lane--add__scope"></span>
+    </button>
+  </template>
+
+  <!-- One true-status option in the editor -->
+  <template id="tpl-status-option">
+    <label class="status-option">
+      <input type="radio" name="true-status" />
+      <span class="status-dot"></span>
+      <span class="status-option__text">
+        <span class="status-option__label"></span>
+        <span class="status-option__blurb"></span>
+      </span>
+    </label>
+  </template>
+  <!-- ══ /TEMPLATES ══ -->
+
   <script src="mock-data.js"></script>
-  <script>
-    let currentPerson = null;
-    const expandedLanes = new Set();   // lanes the user has manually opened
-
-    function initPersonSelect() {
-      const sel = document.getElementById('person-select');
-      sel.innerHTML = PEOPLE.map(p => `<option value="${p.name}">${p.name} — ${p.deptLabel}</option>`).join('');
-      currentPerson = PEOPLE[0];
-      document.getElementById('legend').innerHTML = legendHTML();
-      render();
-    }
-
-    function onPersonChange() {
-      currentPerson = PEOPLE.find(p => p.name === document.getElementById('person-select').value);
-      expandedLanes.clear();
-      render();
-    }
-
-    function toggleLane(key) {
-      if (expandedLanes.has(key)) expandedLanes.delete(key);
-      else expandedLanes.add(key);
-      renderBoard();
-    }
-
-    // Lanes are this person's own scan locations.
-    function renderBoard() {
-      const q = (document.getElementById('search-input').value || '').toLowerCase().trim();
-      const mine = JOBS.filter(j => j.person === currentPerson.name && (
-        !q || j.desc.toLowerCase().includes(q) || String(j.job).includes(q) ||
-        j.customer.toLowerCase().includes(q) || j.mgmtGroup.toLowerCase().includes(q)
-      ));
-
-      document.getElementById('kanban').innerHTML = currentPerson.locations.map(loc =>
-        laneHTML(loc.desc, loc.label, mine.filter(j => j.location === loc.desc), expandedLanes)
-      ).join('');
-    }
-
-    function render() {
-      document.getElementById('person-dept').textContent =
-        currentPerson.deptLabel + ' — jobs currently sitting at a scan location tied to ' + currentPerson.name + '.';
-      renderBoard();
-    }
-
-    function goToJob(jobNum) { showToast('Opening job #' + jobNum + '…'); }
-
-    function showToast(msg) {
-      const t = document.getElementById('toast');
-      t.textContent = '→  ' + msg;
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 2200);
-    }
-
-    document.getElementById('search-input').addEventListener('input', renderBoard);
-    initPersonSelect();
-  </script>
+  <script src="lane-data.js"></script>
+  <script src="lane-editor.js"></script>
+  <script src="person-dashboard.js"></script>
 </body>
 
 </html>
