@@ -62,18 +62,76 @@ body {
   overflow: hidden;
 }
 
-/* Breadcrumb bar + crumbs: components/breadcrumbs/breadcrumbs.css */
-/* The shared crumbs centre on --container-workspace; the board is full
-   width, so line them up with the board's left edge instead. */
-.breadcrumb-bar .breadcrumbs { max-width: none; }
+/* Crumbs (used in the job aside): components/breadcrumbs/breadcrumbs.css */
 
 /* The page fills what's left; only the board scrolls. */
+/* The dashboard content column — same width as the live dashboard's
+   search row (--container-data), centred. */
 .board-page {
   flex: 1;
   min-height: 0;
+  width: 100%;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  padding: var(--scale-600) var(--scale-800) var(--scale-600);
+  padding: var(--scale-600) var(--scale-600) var(--scale-600);
+}
+
+
+/* ══ DASHBOARD ACTIONS ═══════════════════════════════════════════
+   From PL-JM-1.25 dashboard.css — values as they are there. The
+   .add-row here is that file's content-sized version; it's scoped so
+   it doesn't fight the full-width .add-row in the Add View aside.
+   ══════════════════════════════════════════════════════════════ */
+.dashboard-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-shrink: 0;
+}
+.dashboard-search {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.dashboard-search i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+.dashboard-search input {
+  width: 100%;
+  min-height: var(--scale-1100); /* matches the .add-row buttons beside it */
+  padding: 0 14px 0 38px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius-md);
+  background: var(--bg-surface);
+  font-family: inherit;
+  font-size: var(--fontsize-body-sm);
+  color: var(--text-primary);
+  outline: none;
+}
+.dashboard-search input:focus { border-color: var(--border-focus); }
+.dashboard-search input::placeholder { color: var(--text-tertiary); }
+.dashboard-create-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.dashboard-create-actions .add-row {
+  display: inline-flex;
+  gap: var(--scale-200);
+  width: auto;
+  color: var(--interactive-default);
+  font-size: var(--fontsize-body-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 
@@ -128,8 +186,37 @@ body {
 }
 .search-field__input:focus { outline: none; border-color: var(--border-focus); }
 
-.btn-ghost--danger { color: var(--color-red-900); }
+/* Destructive solid button — the confirm in the delete modal. Same
+   treatment as Inventory's .btn-pill.solid.is-danger. */
+.btn-primary--danger { background: var(--status-error-border); }
+.btn-primary--danger:hover { background: var(--status-error-border); opacity: .85; }
 
+/* Destructive toolbar icon: same as any .icon-btn at rest, fills red
+   with a white icon on hover/focus. */
+.icon-btn--destructive:hover,
+.icon-btn--destructive:focus-visible {
+  background: var(--color-red-300);
+  border-color: var(--color-red-300);
+  color: var(--color-white);
+}
+
+/* Destructive icon button: primary icon and a subtle border at rest,
+   filling red with a white icon on hover/focus. Sized to sit level
+   with the 36px fields beside it. */
+.icon-btn--danger {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+  border-radius: var(--border-radius-md);
+}
+.icon-btn--danger:hover,
+.icon-btn--danger:focus-visible {
+  background: var(--color-red-300);
+  border-color: var(--color-red-300);
+  color: var(--color-white);
+}
 .aside-empty {
   margin: 0;
   font-size: var(--fontsize-body-sm);
@@ -234,18 +321,175 @@ body {
   padding: var(--scale-500) var(--scale-500) var(--scale-400);
   flex-shrink: 0;
 }
+/* Name + actions on top, owner under it */
 .view-toolbar__name {
   display: flex;
-  align-items: center;
-  gap: var(--scale-200);
+  flex-direction: column;
   min-width: 0;
+  gap: var(--scale-100);
   margin-right: auto;
+}
+.view-toolbar__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--scale-300);
+  min-width: 0;
+}
+.view-toolbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--scale-100);
+  flex-shrink: 0;
 }
 .view-toolbar__title {
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+
+/* ── Hidden columns menu (toolbar, non-owners) ── */
+.hidden-cols { position: relative; flex-shrink: 0; }
+.hidden-cols__toggle { color: var(--text-secondary); }
+.hidden-cols__toggle[aria-expanded="true"] { color: var(--text-interactive); }
+.hidden-cols__menu {
+  position: absolute;
+  top: calc(100% + var(--scale-100));
+  right: 0;
+  z-index: 20;
+  min-width: 240px;
+  padding: var(--scale-300);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 6px 18px rgb(from var(--color-black) r g b / 0.12);
+}
+.hidden-cols__title {
+  margin: 0 0 var(--scale-200);
+  font-size: var(--fontsize-label);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.hidden-cols__list { list-style: none; margin: 0; padding: 0; }
+.hidden-cols__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--scale-300);
+  padding: var(--scale-100) 0;
+  font-size: var(--fontsize-body-sm);
+}
+.hidden-cols__item .text-btn,
+.hidden-cols__all { color: var(--text-interactive); }
+.hidden-cols__all { margin-top: var(--scale-200); padding-left: 0; }
+
+/* ── View owner (toolbar) ── */
+.view-owner {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--scale-200);
+  font-size: var(--fontsize-body-sm);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+
+/* ══ ADD VIEW ASIDE ═════════════════════════════════════════════
+   Same recipe as Inventory's Add a Library (inventory.css:
+   .add-row / .add-label and the .lib-option* picker), renamed.
+   ══════════════════════════════════════════════════════════════ */
+.add-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--scale-1100);
+  padding: 0 var(--scale-400);
+  border: 1px solid var(--status-info-border);
+  border-radius: var(--border-radius-md);
+  background: var(--status-info-bg);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--duration-fast);
+}
+.add-row:hover { background: var(--interactive-bg-subtle); }
+.add-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--scale-200);
+  color: var(--interactive-default);
+  font-size: var(--fontsize-body-md);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.view-picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.view-option-row { display: flex; align-items: center; }
+.view-option {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--scale-200);
+  padding: var(--scale-200) var(--scale-300);
+  background: none;
+  border: 0;
+  border-radius: var(--border-radius-sm);
+  font-family: inherit;
+  font-size: var(--fontsize-body-sm);
+  text-align: left;
+  cursor: pointer;
+}
+.view-option:hover { background: var(--interactive-bg-subtle); }
+.view-option:focus-visible { outline: 2px solid var(--border-focus); outline-offset: -2px; }
+.view-option__name { color: var(--text-primary); font-weight: var(--font-weight-medium); }
+.view-option__meta { color: var(--text-tertiary); }
+.view-option__on {
+  margin-left: auto;
+  color: var(--interactive-default);
+  font-size: var(--fontsize-label);
+  white-space: nowrap;
+}
+.view-option__act { display: none; }
+.view-option.is-on:hover .view-option__rest,
+.view-option.is-on:focus-visible .view-option__rest { display: none; }
+.view-option.is-on:hover .view-option__act,
+.view-option.is-on:focus-visible .view-option__act { display: inline; color: var(--text-secondary); }
+/* The last view in your tabs keeps its mark and loses its hover */
+.view-option[aria-disabled="true"] { cursor: default; }
+.view-option[aria-disabled="true"]:hover { background: none; }
+.view-option[aria-disabled="true"]:hover .view-option__rest { display: inline; }
+.view-option[aria-disabled="true"]:hover .view-option__act { display: none; }
+
+/* ── Board settings row (edit board aside) ── */
+.board-settings__row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--scale-300);
+}
+.board-settings__field { display: flex; flex-direction: column; min-width: 0; }
+.board-settings__field--name { flex: 1; }
+.board-settings__field--owner { flex: 0 0 180px; }
+.board-settings .input { height: 36px; padding-block: 0; }
+.owner-field__note {
+  margin: var(--scale-200) 0 0;
+  font-size: var(--fontsize-body-sm);
+  color: var(--text-tertiary);
+}
+
+/* Footer actions sit right */
+.flyout-footer__actions {
+  display: flex;
+  gap: var(--scale-300);
+  margin-left: auto;
 }
 
 
@@ -412,6 +656,39 @@ body {
 .loc-board.is-dragging .loc-column.is-locked .loc-column__blocked { display: flex; }
 .loc-board.is-dragging .loc-column.is-source .loc-column__blocked { display: none; }
 
+/* ── Column reorder (owner) ── */
+.loc-column__grip {
+  flex-shrink: 0;
+  font-size: var(--fontsize-label);
+  color: var(--text-tertiary);
+}
+.loc-board.is-reorderable .loc-column__header { cursor: grab; }
+.loc-column.is-column-dragging { opacity: 0.4; }
+/* Insertion bar, centred in the gap beside the target column */
+.loc-column.is-insert-before::before,
+.loc-column.is-insert-after::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: var(--border-radius-full);
+  background: var(--interactive-default);
+}
+.loc-column.is-insert-before::before { left: calc(var(--scale-300) / -2 - 2px); }
+.loc-column.is-insert-after::after { right: calc(var(--scale-300) / -2 - 2px); }
+
+/* ── Hide column (non-owners) — quiet until the column is hovered ── */
+.loc-column__hide {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  opacity: 0;
+  transition: opacity var(--duration-fast);
+}
+.loc-column:hover .loc-column__hide,
+.loc-column__hide:focus-visible { opacity: 1; }
+
 .loc-column.is-drop-target {
   border-style: solid !important;
   border-color: var(--interactive-default) !important;
@@ -522,52 +799,55 @@ body {
   flex-shrink: 0;
 }
 
-/* Crumbs sit first in the body, then the job meta line */
-/* Job crumb as a link chip — same recipe as .notif-item__where in the
-   notifications prototype (notifications.css). */
-.crumb--chip {
+/* Top row: crumbs left (they truncate if the row runs short), Go to Job right */
+.job-summary__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--scale-300);
+  margin-bottom: var(--scale-300);
+}
+/* Go to Job — small link tile, same recipe as .notif-item__where in
+   the notifications prototype (notifications.css). */
+.job-summary__go {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--scale-100);
   padding: 0 var(--scale-200);
   border: 1px solid var(--border-subtle);
   border-radius: var(--border-radius-sm);
   color: var(--text-primary);
+  font-size: var(--fontsize-body-sm);
   font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  white-space: nowrap;
 }
-.crumb--chip:hover {
+.job-summary__go:hover {
   border-color: var(--interactive-default);
   color: var(--text-interactive);
 }
-/* Description is capped short so the chip reads as a link, not a
-   second title — the full text is in the header and the link's title.
-   18ch ≈ 22 characters of Google Sans. The chip can also shrink below
-   that if the crumb row runs out of room. */
-.crumb--chip {
-  min-width: 0;
-  flex: 0 1 auto;
-}
-.crumb--chip__desc {
-  min-width: 0;
-  max-width: 18ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: var(--font-weight-book);
-}
-.crumb--chip i {
+.job-summary__go i {
   font-size: var(--fontsize-label);
   color: var(--text-tertiary);
 }
 
 /* The shared .breadcrumbs is built for the page bar (centred, max-width
-   container) — in the aside it just needs to sit flush left and wrap. */
+   container) — in the aside it just needs to sit flush left. */
 .job-summary__crumbs {
   max-width: none;
-  margin: 0 0 var(--scale-300);
+  margin: 0;
   flex-wrap: nowrap;
   min-width: 0;
 }
-.job-summary__crumbs .crumb,
 .job-summary__crumbs .crumb-sep { flex-shrink: 0; }
-.job-summary__crumbs .crumb--chip { flex-shrink: 1; }
+.job-summary__crumbs .crumb { min-width: 0; }
+.crumb__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .job-summary__chips {
   display: flex;
   flex-wrap: wrap;
@@ -598,6 +878,7 @@ body {
   margin-top: var(--scale-400);
 }
 .job-summary__footer .job-summary__chips { margin-top: 0; }
+.job-summary__chips--end { justify-content: flex-end; }
 
 /* ── Aside tabs ──
    The button is the shared .tab-btn; only the container is local. */
@@ -629,10 +910,15 @@ body {
   color: var(--text-secondary);
 }
 
-/* ── Log time form ──
-   One row: two narrow number boxes, Sent proof?, Task (takes the rest),
-   Add. The error line wraps onto its own row underneath. */
-.time-form {
+/* ── Quick forms (above the aside tabs) ──
+   Shared box for the move form and the log time form: one row, error
+   line wraps underneath. */
+.quick-forms {
+  display: flex;
+  flex-direction: column;
+  gap: var(--scale-300);
+}
+.quick-form {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -642,7 +928,23 @@ body {
   border-radius: var(--border-radius-md);
   background: var(--bg-muted);
 }
-.time-form .input { height: 36px; padding-block: 0; }
+.quick-form .input { height: 36px; padding-block: 0; }
+/* Section label (.widget-section-label, PL-JM-1.25) sits on its own row */
+.quick-form > .widget-section-label { flex-basis: 100%; }
+.quick-form__submit { flex-shrink: 0; height: 36px; }
+.quick-form .input[aria-invalid="true"] { border-color: var(--color-red-900); }
+.quick-form .input:disabled { background: var(--bg-muted); color: var(--text-tertiary); }
+.quick-form__error {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--fontsize-body-sm);
+  color: var(--color-red-900);
+}
+
+/* Move job: the location field takes the row */
+.location-form__input { flex: 1; min-width: 0; }
+
+/* Log time: two narrow number boxes, Sent proof?, Task (takes the rest), Add */
 .time-form__num { flex: 0 0 76px; width: 76px; }
 /* No spinners — keyboard entry only, and they were eating the placeholder */
 .time-form__num { appearance: textfield; -moz-appearance: textfield; }
@@ -650,14 +952,7 @@ body {
 .time-form__num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .time-form__proof { flex: 0 0 116px; width: 116px; }
 .time-form__task { flex: 1 1 140px; min-width: 0; }
-.time-form__submit { flex-shrink: 0; height: 36px; }
-.time-form .input[aria-invalid="true"] { border-color: var(--color-red-900); }
-.time-form__error {
-  flex-basis: 100%;
-  margin: 0;
-  font-size: var(--fontsize-body-sm);
-  color: var(--color-red-900);
-}
+
 
 /* ══ ACTIVITY ═══════════════════════════════════════════════════ */
 
@@ -709,7 +1004,6 @@ body {
   display: flex;
   flex-direction: column;
   /* Local: boxed, same border/radius as the log time form above it */
-  padding: var(--scale-200) var(--scale-400);
   border: 1px solid var(--border-subtle);
   border-radius: var(--border-radius-md);
 }
@@ -800,7 +1094,7 @@ body {
 
 /* ── Icon dots (local) ──
    The JM tick grows into a small disc holding an icon: a pin for
-   scans, a clock for time entries (gold, so they read apart in All). */
+   scans, a clock for time entries, a share arrow for proofs sent. */
 .timeline-tick {
   width: 20px;
   height: 20px;
@@ -812,8 +1106,27 @@ body {
 }
 .timeline-tick__icon { display: none; }
 .timeline-row[data-kind="scan"] .timeline-tick__icon--scan,
-.timeline-row[data-kind="time"] .timeline-tick__icon--time { display: block; }
-.timeline-row[data-kind="time"] .timeline-tick { background: var(--accent-default); }
+.timeline-row[data-kind="time"] .timeline-tick__icon--time,
+.timeline-row[data-kind="proof"] .timeline-tick__icon--proof { display: block; }
+/* Each activity kind gets a data colour — light fill (-00), border
+   (-04), dark icon (-06): scans blueberry, time entries grape, proofs
+   orange. */
+.timeline-row[data-kind] .timeline-tick { border: 1px solid; }
+.timeline-row[data-kind="scan"] .timeline-tick {
+  background: var(--datacolor-blueberry-00);
+  border-color: var(--datacolor-blueberry-04);
+  color: var(--datacolor-blueberry-06);
+}
+.timeline-row[data-kind="time"] .timeline-tick {
+  background: var(--datacolor-grape-00);
+  border-color: var(--datacolor-grape-04);
+  color: var(--datacolor-grape-06);
+}
+.timeline-row[data-kind="proof"] .timeline-tick {
+  background: var(--datacolor-orange-00);
+  border-color: var(--datacolor-orange-04);
+  color: var(--datacolor-orange-06);
+}
 /* The JM first/last offsets are sized for an 8px tick — with the disc,
    keep every tick centred so it lines up with its date and title. */
 .timeline-connector-first .timeline-line,
@@ -859,6 +1172,35 @@ body {
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+/* Proofing contacts copy string — job-detail.css + proof-contacts-modal.css */
+.copy-wrap {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 6px 8px;
+  margin: 0 -8px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: background 0.15s;
+  border: solid 1px transparent;
+}
+.copy-wrap:not(.copy-wrap-copied):hover,
+.copy-wrap:focus-visible {
+  background: var(--interactive-bg-subtle);
+  border: solid 1px var(--interactive-default);
+  outline: none;
+}
+.copy-wrap-copied {
+  background: var(--status-success-bg);
+  border: solid 1px var(--status-success-border);
+  transition: none; /* snap on; the hover transition only eases it back off */
+}
+.pc-email-string-text {
+  font-size: var(--fontsize-body-sm);
+  color: var(--text-secondary);
+  word-break: break-all;
+  line-height: 1.5;
 }
 .widget-notes {
   display: flex;

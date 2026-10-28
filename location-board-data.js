@@ -323,6 +323,44 @@ const JOBS = [
   { number: 118280, description: 'Event Signage — A-Frame',               customerNumber: 12210, customer: 'Summit Coffee Co.',        mgmtGroup: 'Summit Brands',          jobType: 'Inventory Release', prodType: 'Paper',         locationId: 70 },
 ];
 
+/* ── Proofing contacts, by job number ──
+   The addresses a proof goes to. Set per job on the job page (Manage
+   job contacts); the aside only shows them. 118385 has none on purpose,
+   to show the empty state. */
+const PROOF_CONTACTS = {
+  118392: ['d.kovach@bellwetherhotel.com', 'events@bellwetherhotel.com'],
+  118381: ['d.kovach@bellwetherhotel.com'],
+  118365: ['frontdesk@bellwetherhotel.com', 'd.kovach@bellwetherhotel.com'],
+  118340: ['d.kovach@bellwetherhotel.com', 'm.trevino@bellwetherhotel.com'],
+  118291: ['m.trevino@bellwetherhotel.com'],
+  118388: ['sam@harborandvine.com'],
+  118361: ['sam@harborandvine.com', 'gm@harborandvine.com'],
+  118315: ['sam@harborandvine.com'],
+  118301: ['sam@harborandvine.com', 'gm@harborandvine.com'],
+  118354: ['owner@lakeviewgrill.com'],
+  118308: ['owner@lakeviewgrill.com'],
+  118377: ['marketing@copperkettle.com'],
+  118347: ['marketing@copperkettle.com', 'chef@copperkettle.com'],
+  118305: ['marketing@copperkettle.com'],
+  118284: ['marketing@copperkettle.com'],
+  118372: ['catering@riversidecc.com'],
+  118343: ['catering@riversidecc.com'],
+  118319: ['facilities@riversidecc.com', 'catering@riversidecc.com'],
+  118298: ['catering@riversidecc.com'],
+  118369: ['bar@gildedfox.com'],
+  118350: ['bar@gildedfox.com', 'owner@gildedfox.com'],
+  118326: ['owner@gildedfox.com'],
+  118294: ['bar@gildedfox.com'],
+  118358: ['brand@summitcoffee.com'],
+  118336: ['brand@summitcoffee.com', 'ops@summitcoffee.com'],
+  118322: ['brand@summitcoffee.com'],
+  118280: ['ops@summitcoffee.com'],
+  118333: ['fnb@sandpiperresort.com'],
+  118329: ['fnb@sandpiperresort.com', 'gm@sandpiperresort.com'],
+  118312: ['fnb@sandpiperresort.com'],
+  118287: ['fnb@sandpiperresort.com'],
+};
+
 /* ── General notes, by job number ── */
 const NOTES = {
   118392: [
@@ -379,12 +417,22 @@ const TIME_ENTRIES = {
   118361: [ { who: 'Hannah B', minutes: 30, task: 'Double Check', proof: 'no',      at: '2026-10-22T09:40' } ],
 };
 
+/* ── People ──
+   CURRENT_USER is who's signed in. USERS is who ownership can be
+   transferred to. Both come from user management in the real build. */
+const CURRENT_USER = 'Healey P';
+const USERS = ['Healey P', 'Colin D', 'Megan D', 'Kendra T', 'Jayne E', 'Barry', 'Peyton'];
+
 /* ── Views ──
-   A view is a named, ordered list of location ids. Each person keeps
-   their own. These three show the range: a creative allocation board,
-   a personal board, and a bindery floor that's mostly locked columns. */
+   A view is a named, ordered list of location ids with one owner.
+   Every view is visible to everyone; only the owner can edit it.
+   MY_VIEW_IDS is which views the signed-in person keeps as tabs. */
 const VIEWS = [
-  { id: 'v-creative', name: 'Creative Allocation', locationIds: [23, 143, 131, 133, 167, 171, 192, 34, 150, 204, 2] },
-  { id: 'v-mine',     name: 'My Jobs',             locationIds: [31, 35, 34, 32, 185] },
-  { id: 'v-bindery',  name: 'Bindery Floor',       locationIds: [1, 186, 12, 125, 126, 127, 176, 70] },
+  { id: 'v-creative', name: 'Creative Allocation',  owner: 'Colin D',  locationIds: [23, 143, 131, 133, 167, 171, 192, 34, 150, 204, 2] },
+  { id: 'v-healey',   name: "Healey's Jobs",        owner: 'Healey P', locationIds: [31, 35, 34, 32, 185] },
+  { id: 'v-bindery',  name: 'Bindery Floor',        owner: 'Barry',    locationIds: [1, 186, 12, 125, 126, 127, 176, 70] },
+  { id: 'v-proofout', name: 'Designer Proof Outs',  owner: 'Megan D',  locationIds: [2, 132, 134, 168, 172, 193, 88, 84] },
+  { id: 'v-wood',     name: 'Woodshop',             owner: 'Barry',    locationIds: [14, 155, 156, 157, 158, 198, 159, 160, 100] },
+  { id: 'v-holds',    name: 'Holds',                owner: 'Peyton',   locationIds: [117, 44, 181, 182, 183, 35] },
 ];
+const MY_VIEW_IDS = ['v-creative', 'v-healey', 'v-bindery'];
